@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"golab/petri_net_simulator/petrinet"
+	"petri-net-simulator/petrinet"
 	"time"
 )
 

@@ -19,6 +19,7 @@ type PlaceI interface {
 	lock()
 	trylock() bool
 	unlock()
+	addTokensNoLock(toks int) bool
 }
 
 /*
@@ -69,11 +70,9 @@ func (p *Place) notifyTransitions() {
 			a.Notify()
 		}
 	}
-}
-func (p *Place) AddTokens(toks int) bool {
-	p.lock()
-	defer p.unlock()
 
+}
+func (p *Place) addTokensNoLock(toks int) bool {
 	new_tokens := p.toks + toks
 	if new_tokens < 0 {
 		logger.Panicf("Place [%s] cannot contain negative value for tokens", p.id)
@@ -82,6 +81,12 @@ func (p *Place) AddTokens(toks int) bool {
 	p.toks = new_tokens
 	p.notifyTransitions()
 	return true
+}
+func (p *Place) AddTokens(toks int) bool {
+	p.lock()
+	defer p.unlock()
+
+	return p.addTokensNoLock(toks)
 }
 func (p *Place) addIn(a *Arc) {
 	p.arcs_in = append(p.arcs_in, a)
@@ -170,4 +175,7 @@ func (p *AlertPlace) trylock() bool {
 	// TODO
 	p.mutex.Lock()
 	return true
+}
+func (p *AlertPlace) addTokensNoLock(toks int) bool {
+	panic("method not implemented")
 }

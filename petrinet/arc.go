@@ -28,7 +28,7 @@ func (a *Arc) TestConsumeTokens() bool {
 
 // Used by Transition to remove tokens from (incoming) Place
 func (a *Arc) ConsumeTokens() {
-	a.P.AddTokens(-a.Weight)
+	a.P.addTokensNoLock(-a.Weight)
 }
 
 // Used by Transition to add tokens to (destination) Place

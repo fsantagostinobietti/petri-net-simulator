@@ -26,9 +26,8 @@ type PlaceI interface {
 	Place
 */
 type Place struct {
-	id   string
-	toks int
-	//mutex    sync.Mutex
+	id       string
+	toks     int
 	sem      *semaphore.Weighted
 	arcs_in  []*Arc
 	arcs_out []*Arc
@@ -52,14 +51,12 @@ func (p *Place) tokens() int {
 	return p.toks
 }
 func (p *Place) lock() {
-	//p.mutex.Lock()
 	p.sem.Acquire(ctx, 1)
 }
 func (p *Place) trylock() bool {
 	return p.sem.TryAcquire(1)
 }
 func (p *Place) unlock() {
-	//p.mutex.Unlock()
 	p.sem.Release(1)
 }
 

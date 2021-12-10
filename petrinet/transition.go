@@ -32,22 +32,35 @@ func (t *Transition) addOut(a *Arc) {
 	t.arcs_out = append(t.arcs_out, a)
 }
 func lockAllInPlaces(t *Transition) {
-	// TODO
-	//for {}
+	for {
+		success := true
+		for _, arc := range t.arcs_in {
+			if !arc.P.trylock() {
+				//logger.Printf("Transition [%s] trylock place [%s] failed!", t.Id, arc.P.Id())
+				success = false
+				break
+			}
+		}
+		if success {
+			return // all places locked successfully
+		}
+	}
 }
 func unlockAllInPlaces(t *Transition) {
-	/*for _, arc := range t.arcs_in {
+	for _, arc := range t.arcs_in {
 		arc.P.unlock()
-	}*/
+	}
 }
 func firingAttempt(t *Transition) bool {
-	// TODO implement as an atomic operation (i.e. a transaction)
 	lockAllInPlaces(t)
+	// verify tokens can be consumed
 	for _, arc := range t.arcs_in {
 		if !arc.TestConsumeTokens() { // place has not enought tokens
+			unlockAllInPlaces(t)
 			return false
 		}
 	}
+	// finally consume tokens
 	for _, arc := range t.arcs_in {
 		arc.ConsumeTokens()
 	}

@@ -34,15 +34,22 @@ func (t *Transition) addOut(a *Arc) {
 func lockAllInPlaces(t *Transition) {
 	for {
 		success := true
-		for _, arc := range t.arcs_in {
+		max_i := 0
+		for i, arc := range t.arcs_in {
 			if !arc.P.trylock() {
 				//logger.Printf("Transition [%s] trylock place [%s] failed!", t.Id, arc.P.Id())
 				success = false
+				max_i = i
 				break
 			}
 		}
 		if success {
 			return // all places locked successfully
+		} else {
+			// unlock all places ... and try again
+			for i := 0; i < max_i; i++ {
+				t.arcs_in[i].P.unlock()
+			}
 		}
 	}
 }

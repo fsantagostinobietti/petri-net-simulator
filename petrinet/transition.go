@@ -58,12 +58,13 @@ func unlockAllInPlaces(t *Transition) {
 		arc.P.unlock()
 	}
 }
-func firingAttempt(t *Transition) bool {
+func consumeInTokens(t *Transition) bool {
 	lockAllInPlaces(t)
+	defer unlockAllInPlaces(t)
+
 	// verify tokens can be consumed
 	for _, arc := range t.arcs_in {
 		if !arc.TestConsumeTokens() { // place has not enought tokens
-			unlockAllInPlaces(t)
 			return false
 		}
 	}
@@ -71,12 +72,17 @@ func firingAttempt(t *Transition) bool {
 	for _, arc := range t.arcs_in {
 		arc.ConsumeTokens()
 	}
-	unlockAllInPlaces(t)
-
-	for _, arc := range t.arcs_out {
-		arc.FireTokens()
-	}
 	return true
+}
+
+func firingAttempt(t *Transition) bool {
+	ok := consumeInTokens(t)
+	if ok {
+		for _, arc := range t.arcs_out {
+			arc.FireTokens()
+		}
+	}
+	return ok
 }
 func execute(t *Transition) {
 	for {

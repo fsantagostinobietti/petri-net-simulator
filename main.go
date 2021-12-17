@@ -7,16 +7,17 @@ import (
 )
 
 func main() {
+	net1 := petrinet.NewNet("MyNet")
 	// P1 -> T1  and  P2 -> T1
-	p1 := petrinet.NewPlace("P1")
-	p2 := petrinet.NewPlace("P2")
-	t1 := petrinet.NewTransition("T1")
+	p1 := net1.NewPlace("P1")
+	p2 := net1.NewPlace("P2")
+	t1 := net1.NewTransition("T1")
 	const w1 = 1
 	p1.ConnectTo(t1, w1)
 	const w2 = 1
 	p2.ConnectTo(t1, w2)
 	// T1 -> Pa
-	pa := petrinet.NewAlertPlace("Pa")
+	pa := net1.NewAlertPlace("Pa")
 	const wa = 1
 	t1.ConnectTo(pa, wa)
 	pa.AlertTokensGTE(2 * wa)
@@ -25,6 +26,7 @@ func main() {
 	p1.AddTokens(3 * w1)
 	p2.AddTokens(1 * w2)
 	time.Sleep(100 * time.Millisecond)
+	net1.Start()
 	p2.AddTokens(1 * w2)
 
 	pa.WaitForAlert()

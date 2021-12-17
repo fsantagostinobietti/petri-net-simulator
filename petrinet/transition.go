@@ -14,7 +14,6 @@ type Transition struct {
 // Transition constructor
 func NewTransition(id string) *Transition {
 	t := Transition{Id: id, notification: make(chan bool, 1)}
-	t.start()
 	return &t
 }
 func (t *Transition) String() string {

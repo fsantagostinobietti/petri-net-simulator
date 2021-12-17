@@ -2,7 +2,6 @@ package petrinet
 
 import (
 	"fmt"
-	"sync"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -110,13 +109,13 @@ type AlertPlace struct {
 	id         string
 	arc_in     *Arc
 	toks       int
-	mutex      sync.Mutex
+	sem        *semaphore.Weighted
 	toks_alert int
 	alert      chan bool
 }
 
 func NewAlertPlace(id string) *AlertPlace {
-	return &AlertPlace{id: id, alert: make(chan bool, 1)}
+	return &AlertPlace{id: id, alert: make(chan bool, 1), sem: semaphore.NewWeighted(1)}
 }
 func (p *AlertPlace) String() string {
 	s := fmt.Sprintf("AlertPlace: ID [%s] Tokens [%d]", p.id, p.toks)
@@ -125,13 +124,10 @@ func (p *AlertPlace) String() string {
 func (p *AlertPlace) Id() string {
 	return p.id
 }
-func (p *AlertPlace) AddTokens(toks int) bool {
+func (p *AlertPlace) addTokensNoLock(toks int) bool {
 	if toks < 1 {
 		return false
 	}
-	p.lock()
-	defer p.unlock()
-
 	p.toks += toks
 	if p.toks >= p.toks_alert {
 		select {
@@ -140,6 +136,12 @@ func (p *AlertPlace) AddTokens(toks int) bool {
 		}
 	}
 	return true
+}
+func (p *AlertPlace) AddTokens(toks int) bool {
+	p.lock()
+	defer p.unlock()
+
+	return p.addTokensNoLock(toks)
 }
 
 func (p *AlertPlace) addIn(a *Arc) {
@@ -163,16 +165,11 @@ func (p *AlertPlace) tokens() int {
 	return p.toks
 }
 func (p *AlertPlace) lock() {
-	p.mutex.Lock()
-}
-func (p *AlertPlace) unlock() {
-	p.mutex.Unlock()
+	p.sem.Acquire(ctx, 1)
 }
 func (p *AlertPlace) trylock() bool {
-	// TODO
-	p.mutex.Lock()
-	return true
+	return p.sem.TryAcquire(1)
 }
-func (p *AlertPlace) addTokensNoLock(toks int) bool {
-	panic("method not implemented")
+func (p *AlertPlace) unlock() {
+	p.sem.Release(1)
 }

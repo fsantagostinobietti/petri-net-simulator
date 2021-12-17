@@ -2,6 +2,8 @@ package petrinet
 
 import (
 	"fmt"
+
+	"github.com/golang-collections/collections/set"
 )
 
 type Transition struct {
@@ -30,40 +32,49 @@ func (t *Transition) addIn(a *Arc) {
 func (t *Transition) addOut(a *Arc) {
 	t.arcs_out = append(t.arcs_out, a)
 }
-func lockAllInPlaces(t *Transition) {
+
+/* Locks all In and Out transition places
+ */
+func lockPlaces(t *Transition, places *set.Set) {
+
 	for {
+		locked := make([]PlaceI, 0, places.Len())
+
+		// try locking places
 		success := true
-		max_i := 0
-		for i, arc := range t.arcs_in {
-			if !arc.P.trylock() {
-				//logger.Printf("Transition [%s] trylock place [%s] failed!", t.Id, arc.P.Id())
-				success = false
-				max_i = i
-				break
+		places.Do(func(i interface{}) {
+			if success {
+				place := i.(PlaceI)
+				if place.trylock() {
+					locked = append(locked, place)
+				} else {
+					success = false
+				}
 			}
-		}
+		})
+
 		if success {
+			logger.Printf("Transition [%s] lockPlaces() completed successfully!", t.Id)
 			return // all places locked successfully
 		} else {
 			// unlock all places ... and try again
-			for i := 0; i < max_i; i++ {
-				t.arcs_in[i].P.unlock()
+			for _, place := range locked {
+				place.unlock()
 			}
 		}
 	}
 }
-func unlockAllInPlaces(t *Transition) {
-	for _, arc := range t.arcs_in {
-		arc.P.unlock()
-	}
+
+func unlockPlaces(t *Transition, places *set.Set) {
+	places.Do(func(i interface{}) {
+		place := i.(PlaceI)
+		place.unlock()
+	})
 }
 func consumeInTokens(t *Transition) bool {
-	lockAllInPlaces(t)
-	defer unlockAllInPlaces(t)
-
 	// verify tokens can be consumed
 	for _, arc := range t.arcs_in {
-		if !arc.TestConsumeTokens() { // place has not enought tokens
+		if !arc.TestConsumeTokens() { // input place has not enought tokens
 			return false
 		}
 	}
@@ -73,8 +84,22 @@ func consumeInTokens(t *Transition) bool {
 	}
 	return true
 }
+func uniquePlaces(t *Transition) *set.Set {
+	arcs := make([]*Arc, 0, len(t.arcs_in)+len(t.arcs_out))
+	arcs = append(arcs, t.arcs_in...)
+	arcs = append(arcs, t.arcs_out...)
 
+	uniques := set.New()
+	for _, a := range arcs {
+		uniques.Insert(a.P)
+	}
+	return uniques
+}
 func firingAttempt(t *Transition) bool {
+	all_places := uniquePlaces(t)
+	lockPlaces(t, all_places)
+	defer unlockPlaces(t, all_places)
+
 	ok := consumeInTokens(t)
 	if ok {
 		for _, arc := range t.arcs_out {

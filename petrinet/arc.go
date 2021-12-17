@@ -33,5 +33,5 @@ func (a *Arc) ConsumeTokens() {
 
 // Used by Transition to add tokens to (destination) Place
 func (a *Arc) FireTokens() {
-	a.P.AddTokens(a.Weight)
+	a.P.addTokensNoLock(a.Weight)
 }

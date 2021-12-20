@@ -23,7 +23,7 @@ func (a *Arc) Notify() {
 
 //
 func (a *Arc) TestConsumeTokens() bool {
-	return a.P.tokens() >= a.Weight
+	return a.P.Tokens() >= a.Weight
 }
 
 // Used by Transition to remove tokens from (incoming) Place

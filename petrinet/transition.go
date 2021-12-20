@@ -84,7 +84,7 @@ func consumeInTokens(t *Transition) bool {
 	}
 	// verify inhibition arcs
 	for _, inhibit := range t.arcs_inhibition {
-		if inhibit.P.tokens() != 0 {
+		if inhibit.P.Tokens() != 0 {
 			return false
 		}
 	}

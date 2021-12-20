@@ -25,5 +25,5 @@ func TestAddTokensConcurrency(t *testing.T) {
 	}
 
 	wg.Wait()
-	assert.Equal(t, N*TOKS, p.tokens())
+	assert.Equal(t, N*TOKS, p.Tokens())
 }

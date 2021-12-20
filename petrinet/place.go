@@ -7,14 +7,16 @@ import (
 )
 
 type PlaceI interface {
+	// public methods
 	String() string
 	Id() string
 	AddTokens(toks int) bool
 	// Connect Place -> Transition with a weighted Arc
 	ConnectTo(t *Transition, weight int)
+	Tokens() int
+	// private methods
 	addIn(a *Arc)
 	addOut(a *Arc)
-	tokens() int
 	lock()
 	trylock() bool
 	unlock()
@@ -36,7 +38,7 @@ func NewPlace(id string) *Place {
 	return &Place{id: id, sem: semaphore.NewWeighted(1)}
 }
 func (p *Place) String() string {
-	s := fmt.Sprintf("Place: ID [%s] Tokens [%d]", p.Id(), p.tokens())
+	s := fmt.Sprintf("Place: ID [%s] Tokens [%d]", p.Id(), p.Tokens())
 	var aa = ""
 	for _, arc := range p.arcs_out {
 		aa += fmt.Sprintf("%s, ", arc)
@@ -46,7 +48,7 @@ func (p *Place) String() string {
 func (p *Place) Id() string {
 	return p.id
 }
-func (p *Place) tokens() int {
+func (p *Place) Tokens() int {
 	return p.toks
 }
 func (p *Place) lock() {
@@ -161,7 +163,7 @@ func (p *AlertPlace) AlertTokensGTE(toks int) {
 func (p *AlertPlace) WaitForAlert() {
 	<-p.alert
 }
-func (p *AlertPlace) tokens() int {
+func (p *AlertPlace) Tokens() int {
 	return p.toks
 }
 func (p *AlertPlace) lock() {

@@ -31,9 +31,9 @@ func TestSimpleTriggering(test *testing.T) {
 	net.Start()
 	pEnd.WaitForAlert()
 
-	assert.Equal(test, 1, pEnd.tokens())
-	assert.Equal(test, 0, p1.tokens())
-	assert.Equal(test, 0, p2.tokens())
+	assert.Equal(test, 1, pEnd.Tokens())
+	assert.Equal(test, 0, p1.Tokens())
+	assert.Equal(test, 0, p2.Tokens())
 }
 
 // test simple net with a transition
@@ -60,7 +60,7 @@ func TestCloseLoopTriggering(test *testing.T) {
 	net.Start()
 	pEnd.WaitForAlert()
 
-	assert.Equal(test, powInt(2, N)-1, pEnd.tokens())
+	assert.Equal(test, powInt(2, N)-1, pEnd.Tokens())
 }
 
 // Test multiple transitions triggering concurrently againt the same places
@@ -91,9 +91,9 @@ func TestConcurrentTriggering(test *testing.T) {
 	}
 	pEnd.WaitForAlert()
 
-	assert.Equal(test, 2*N, pEnd.tokens())
-	assert.Equal(test, 0, p.tokens())
-	assert.Equal(test, 0, p0.tokens())
+	assert.Equal(test, 2*N, pEnd.Tokens())
+	assert.Equal(test, 0, p.Tokens())
+	assert.Equal(test, 0, p0.Tokens())
 }
 
 func powInt(x, y int) int {
@@ -128,7 +128,7 @@ func TestAtomicTriggering(test *testing.T) {
 	net.Start()
 	palert.WaitForAlert()
 
-	assert.Equal(test, powInt(2, N)-1, palert.tokens())
+	assert.Equal(test, powInt(2, N)-1, palert.Tokens())
 }
 
 func TestTriggeringWithInhibition(test *testing.T) {
@@ -157,7 +157,7 @@ func TestTriggeringWithInhibition(test *testing.T) {
 	net.Start()
 
 	pEnd.WaitForAlert()
-	assert.Equal(test, 1, pEnd.tokens())
-	assert.Equal(test, N-1, p1.tokens())
-	assert.Equal(test, 1, p0.tokens())
+	assert.Equal(test, 1, pEnd.Tokens())
+	assert.Equal(test, N-1, p1.Tokens())
+	assert.Equal(test, 1, p0.Tokens())
 }

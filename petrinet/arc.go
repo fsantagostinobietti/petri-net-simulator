@@ -35,3 +35,12 @@ func (a *Arc) ConsumeTokens() {
 func (a *Arc) FireTokens() {
 	a.P.addTokensNoLock(a.Weight)
 }
+
+/*
+	[P]lace -> [T]ransition inhibition arc
+*/
+type InhibitionArc struct {
+	Id string
+	P  PlaceI
+	T  *Transition
+}

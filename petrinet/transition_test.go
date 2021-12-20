@@ -128,5 +128,36 @@ func TestAtomicTriggering(test *testing.T) {
 	net.Start()
 	palert.WaitForAlert()
 
-	assert.Equal(test, powInt(2, N)-1, palert.tokens()) //2^N-1
+	assert.Equal(test, powInt(2, N)-1, palert.tokens())
+}
+
+func TestTriggeringWithInhibition(test *testing.T) {
+	const N = 5
+
+	// build petri-net
+	/* build net:
+	(p1) -1----.
+	           v
+	(P0) -1-o [T1] -1-> (PEnd)
+	  ^------1-'
+	*/
+	net := NewNet("Net with Inhibition")
+	p0 := net.NewPlace("P0") // used to inhibit transition 't1'
+	p1 := net.NewPlace("P1")
+	t1 := net.NewTransition("T1")
+	p1.ConnectTo(t1, 1)
+	t1.InhibitedBy(p0)
+	t1.ConnectTo(p0, 1)
+	pEnd := NewAlertPlace("PEnd")
+	t1.ConnectTo(pEnd, 1)
+
+	// run net
+	p1.AddTokens(N)
+	pEnd.AlertTokensGTE(1)
+	net.Start()
+
+	pEnd.WaitForAlert()
+	assert.Equal(test, 1, pEnd.tokens())
+	assert.Equal(test, N-1, p1.tokens())
+	assert.Equal(test, 1, p0.tokens())
 }

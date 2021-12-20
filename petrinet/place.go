@@ -125,7 +125,7 @@ func (p *AlertPlace) Id() string {
 	return p.id
 }
 func (p *AlertPlace) addTokensNoLock(toks int) bool {
-	if toks < 1 {
+	if toks < 0 {
 		return false
 	}
 	p.toks += toks

@@ -7,10 +7,11 @@ import (
 )
 
 type Transition struct {
-	Id           string
-	arcs_in      []*Arc
-	arcs_out     []*Arc
-	notification chan bool
+	Id              string
+	arcs_in         []*Arc
+	arcs_inhibition []*InhibitionArc
+	arcs_out        []*Arc
+	notification    chan bool
 }
 
 // Transition constructor
@@ -28,6 +29,9 @@ func (t *Transition) String() string {
 }
 func (t *Transition) addIn(a *Arc) {
 	t.arcs_in = append(t.arcs_in, a)
+}
+func (t *Transition) addInhibition(i *InhibitionArc) {
+	t.arcs_inhibition = append(t.arcs_inhibition, i)
 }
 func (t *Transition) addOut(a *Arc) {
 	t.arcs_out = append(t.arcs_out, a)
@@ -75,6 +79,12 @@ func consumeInTokens(t *Transition) bool {
 	// verify tokens can be consumed
 	for _, arc := range t.arcs_in {
 		if !arc.TestConsumeTokens() { // input place has not enought tokens
+			return false
+		}
+	}
+	// verify inhibition arcs
+	for _, inhibit := range t.arcs_inhibition {
+		if inhibit.P.tokens() != 0 {
 			return false
 		}
 	}
@@ -152,4 +162,12 @@ func (t *Transition) ConnectTo(p PlaceI, weight int) {
 	// use arc to connect place and transition
 	t.addOut(a)
 	p.addIn(a)
+}
+
+func (t *Transition) InhibitedBy(p PlaceI) {
+	i := new(InhibitionArc)
+	i.Id = fmt.Sprintf("%s >o %s", p.Id(), t.Id)
+	i.P = p
+	i.T = t
+	t.addInhibition(i)
 }

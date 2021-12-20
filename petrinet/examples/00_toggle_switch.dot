@@ -1,0 +1,27 @@
+/*
+http://www.graphviz.org/doc/info/lang.html
+*/
+
+// Toggle switch Petri Net
+digraph ToggleSwitchNet {
+
+    /* Place Entities */
+    {
+        node [shape=circle]
+        Pin [label="IN"+"\n°1"]
+        Pout [label="OUT"]
+    }
+    /* Transition Entities */
+    {
+        node [shape=square]
+        Ton [label="On"]
+        Toff [label="Off"]
+    }
+    
+    /* Relationships */
+    Pin -> Ton
+    Ton -> Pout
+    Pout -> Ton [arrowhead=odot]
+    Pin -> Toff
+    Pout -> Toff
+}

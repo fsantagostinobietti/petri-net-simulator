@@ -134,19 +134,21 @@ func TestAtomicTriggering(test *testing.T) {
 func TestTriggeringWithInhibition(test *testing.T) {
 	const N = 5
 
-	// build petri-net
 	/* build net:
-	(p1) -1----.
-	           v
-	(P0) -1-o [T1] -1-> (PEnd)
-	  ^------1-'
+
+	┌──────────┐
+	▼          │
+	(P0)──<0>──●[T1]──►(PEnd)
+	             ▲
+	(P1)─────────┘
+
 	*/
-	net := NewNet("Net with Inhibition")
+	net := NewNet("Net with Enabling arc")
 	p0 := net.NewPlace("P0") // used to inhibit transition 't1'
 	p1 := net.NewPlace("P1")
 	t1 := net.NewTransition("T1")
 	p1.ConnectTo(t1, 1)
-	t1.InhibitedBy(p0)
+	t1.EnabledBy(p0, 0, 0)
 	t1.ConnectTo(p0, 1)
 	pEnd := NewAlertPlace("PEnd")
 	t1.ConnectTo(pEnd, 1)

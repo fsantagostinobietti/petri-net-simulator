@@ -37,10 +37,26 @@ func (a *Arc) FireTokens() {
 }
 
 /*
-	[P]lace -> [T]ransition inhibition arc
+	[P]lace -> [T]ransition enable arc
 */
-type InhibitionArc struct {
+const undef = -1
+
+type EnableArc struct {
 	Id string
 	P  PlaceI
 	T  *Transition
+	// weight range
+	low  int // >=low
+	high int // <=high
+}
+
+func (a *EnableArc) IsEnabled() bool {
+	toks := a.P.Tokens()
+	if a.low != undef && toks < a.low {
+		return false
+	}
+	if a.high != undef && toks > a.high {
+		return false
+	}
+	return true
 }

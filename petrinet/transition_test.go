@@ -41,8 +41,11 @@ func TestSimpleTriggering(test *testing.T) {
 func TestCloseLoopTriggering(test *testing.T) {
 	disableLogger()
 	/* build net:
-	(P0) -2-> [T1] -1-> (PEnd)
-	  ^------1-'
+
+	(P0)──2──►[T1]──►(PEnd)
+	 ▲          │
+	 └──────────┘
+
 	*/
 	const N = 16
 	// build petri-net
@@ -107,17 +110,26 @@ func TestAtomicTriggering(test *testing.T) {
 
 	const N = 16
 	// build petri-net
+	/*
+
+	   ┌───►[T1]─────┐
+	   │             ▼
+	 (P1)          (P2)
+	   ▲             │
+	   └────[T2]◄──2─┘
+
+	*/
 	net := NewNet("Avoid Deadlock")
 	p1 := net.NewPlace("P1")
 	p2 := net.NewPlace("P2")
 
 	t1 := net.NewTransition("T1")
-	p1.ConnectTo(t1, 1) //
-	t1.ConnectTo(p2, 1) // P1 -(1)-> T1 -(1)-> P2
+	p1.ConnectTo(t1, 1)
+	t1.ConnectTo(p2, 1)
 
 	t2 := net.NewTransition("T2")
 	p2.ConnectTo(t2, 2) // T2 consume 1 token every time it triggers:
-	t2.ConnectTo(p1, 1) // P2 -(2)-> T2 -(1)-> P1
+	t2.ConnectTo(p1, 1) //
 
 	palert := net.NewAlertPlace("Alert")
 	palert.AlertTokensGTE(powInt(2, N) - 1)

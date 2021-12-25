@@ -164,15 +164,28 @@ func (t *Transition) ConnectTo(p PlaceI, weight int) {
 	p.addIn(a)
 }
 
-func (t *Transition) EnabledBy(p PlaceI, low int, high int) {
+func (t *Transition) SetLow(low int) func(*EnableArc) {
+	return func(a *EnableArc) {
+		a.low = low
+	}
+}
+func (t *Transition) SetHigh(high int) func(*EnableArc) {
+	return func(a *EnableArc) {
+		a.high = high
+	}
+}
+func (t *Transition) EnabledBy(p PlaceI, params ...func(*EnableArc)) {
 	e := new(EnableArc)
 	e.Id = fmt.Sprintf("%s >● %s", p.Id(), t.Id)
 	e.P = p
 	e.T = t
-	e.low, e.high = low, high
+	// set params
+	for _, f := range params {
+		f(e)
+	}
 	t.addEnableArc(e)
 }
 
 func (t *Transition) InhibitedBy(p PlaceI) {
-	t.EnabledBy(p, 0, 0)
+	t.EnabledBy(p, t.SetLow(0), t.SetHigh(0))
 }

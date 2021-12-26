@@ -3,7 +3,7 @@ package petrinet
 type Net struct {
 	id          string
 	places      []PlaceI
-	transitions []*Transition
+	transitions []TransitionI
 }
 
 func NewNet(id string) *Net {
@@ -21,7 +21,7 @@ func (n *Net) NewAlertPlace(id string) *AlertPlace {
 	return p
 }
 
-func (n *Net) NewTransition(id string) *Transition {
+func (n *Net) NewTransition(id string) TransitionI {
 	t := NewTransition(id)
 	n.transitions = append(n.transitions, t)
 	return t

@@ -9,7 +9,7 @@ type Arc struct {
 	Id     string
 	Weight int
 	P      PlaceI
-	T      *Transition
+	T      TransitionI
 }
 
 func (a *Arc) String() string {
@@ -18,7 +18,7 @@ func (a *Arc) String() string {
 
 // Used by Place to notify Transition its readiness
 func (a *Arc) Notify() {
-	a.T.NotifyReadiness()
+	a.T.notifyReadiness()
 }
 
 //

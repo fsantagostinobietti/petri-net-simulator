@@ -12,7 +12,7 @@ type PlaceI interface {
 	Id() string
 	AddTokens(toks int) bool
 	// Connect Place -> Transition with a weighted Arc
-	ConnectTo(t *Transition, weight int)
+	ConnectTo(t TransitionI, weight int)
 	Tokens() int
 	// private methods
 	addIn(a *Arc)
@@ -92,9 +92,9 @@ func (p *Place) addIn(a *Arc) {
 func (p *Place) addOut(a *Arc) {
 	p.arcs_out = append(p.arcs_out, a)
 }
-func (p *Place) ConnectTo(t *Transition, weight int) {
+func (p *Place) ConnectTo(t TransitionI, weight int) {
 	a := new(Arc)
-	a.Id = fmt.Sprintf("%s >%d> %s", p.Id(), weight, t.Id)
+	a.Id = fmt.Sprintf("%s >%d> %s", p.Id(), weight, t.Id())
 	a.Weight = weight
 	a.P = p
 	a.T = t
@@ -153,7 +153,7 @@ func (p *AlertPlace) addIn(a *Arc) {
 func (p *AlertPlace) addOut(a *Arc) {
 	// no output for FinalPlace
 }
-func (p *AlertPlace) ConnectTo(t *Transition, weight int) {
+func (p *AlertPlace) ConnectTo(t TransitionI, weight int) {
 	panic("no output arcs can be connected to AlertPlace")
 }
 

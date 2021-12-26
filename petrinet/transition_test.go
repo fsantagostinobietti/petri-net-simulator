@@ -75,7 +75,7 @@ func TestConcurrentTriggering(test *testing.T) {
 	net := NewNet("TestNet")
 	p0 := net.NewPlace("P0")
 	p := net.NewPlace("P")
-	tt := make([]*Transition, TRANS)
+	tt := make([]TransitionI, TRANS)
 	pEnd := net.NewAlertPlace("PEnd")
 	pEnd.AlertTokensGTE(2 * N)
 	for i := 0; i < TRANS; i++ {

@@ -6,8 +6,22 @@ import (
 	"github.com/golang-collections/collections/set"
 )
 
+type TransitionI interface {
+	Id() string
+	String() string
+	ConnectTo(p PlaceI, weight int)
+	EnabledBy(p PlaceI, params ...func(*EnableArc))
+	SetLow(low int) func(*EnableArc)
+	SetHigh(high int) func(*EnableArc)
+	InhibitedBy(p PlaceI)
+	// private
+	notifyReadiness()
+	addIn(a *Arc)
+	start()
+}
+
 type Transition struct {
-	Id           string
+	id           string
 	arcs_in      []*Arc
 	arcs_enable  []*EnableArc
 	arcs_out     []*Arc
@@ -15,12 +29,15 @@ type Transition struct {
 }
 
 // Transition constructor
-func NewTransition(id string) *Transition {
-	t := Transition{Id: id, notification: make(chan bool, 1)}
+func NewTransition(id string) TransitionI {
+	t := Transition{id: id, notification: make(chan bool, 1)}
 	return &t
 }
+func (t *Transition) Id() string {
+	return t.id
+}
 func (t *Transition) String() string {
-	s := fmt.Sprintf("Transition: ID [%s]", t.Id)
+	s := fmt.Sprintf("Transition: ID [%s]", t.Id())
 	var aa = ""
 	for _, arc := range t.arcs_out {
 		aa += fmt.Sprintf("%s, ", arc)
@@ -58,7 +75,7 @@ func lockPlaces(t *Transition, places *set.Set) {
 		})
 
 		if success {
-			logger.Printf("Transition [%s] lockPlaces() completed successfully!", t.Id)
+			logger.Printf("Transition [%s] lockPlaces() completed successfully!", t.Id())
 			return // all places locked successfully
 		} else {
 			// unlock all places ... and try again
@@ -120,20 +137,20 @@ func firingAttempt(t *Transition) bool {
 }
 func execute(t *Transition) {
 	for {
-		logger.Printf("Transition [%s] ... ", t.Id)
+		logger.Printf("Transition [%s] ... ", t.Id())
 		trigger := <-t.notification
 		if !trigger {
 			logger.Println("Transition stopped")
 			return // stop Transition execution
 		}
 		if firingAttempt(t) {
-			logger.Printf("Transition [%s] triggered successfully", t.Id)
+			logger.Printf("Transition [%s] triggered successfully", t.Id())
 		}
 	}
 }
 func (t *Transition) start() {
 	go execute(t)
-	logger.Printf("Transition [%s] started ", t.Id)
+	logger.Printf("Transition [%s] started ", t.Id())
 }
 
 // Stop Transition execution (blocking)
@@ -143,7 +160,7 @@ func (t *Transition) stop() {
 }
 
 // Used by a Place to notify to Transition it is ready for triggering (non-blocking method)
-func (t *Transition) NotifyReadiness() {
+func (t *Transition) notifyReadiness() {
 	// async write
 	select {
 	case t.notification <- true:
@@ -155,7 +172,7 @@ func (t *Transition) NotifyReadiness() {
 func (t *Transition) ConnectTo(p PlaceI, weight int) {
 	// create arc
 	a := new(Arc)
-	a.Id = fmt.Sprintf("%s >%d> %s", t.Id, weight, p.Id())
+	a.Id = fmt.Sprintf("%s >%d> %s", t.Id(), weight, p.Id())
 	a.Weight = weight
 	a.P = p
 	a.T = t
@@ -176,7 +193,7 @@ func (t *Transition) SetHigh(high int) func(*EnableArc) {
 }
 func (t *Transition) EnabledBy(p PlaceI, params ...func(*EnableArc)) {
 	e := new(EnableArc)
-	e.Id = fmt.Sprintf("%s >● %s", p.Id(), t.Id)
+	e.Id = fmt.Sprintf("%s >● %s", p.Id(), t.Id())
 	e.P = p
 	e.T = t
 	// set params

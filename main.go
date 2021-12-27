@@ -32,8 +32,12 @@ func main() {
 	p2.AddTokens(1 * w2)
 
 	pa.WaitForAlert()
+	net1.Stop()
+
 	fmt.Println(p1)
 	fmt.Println(p2)
 	fmt.Println(t1)
 	fmt.Println(pa)
+
+	time.Sleep(100 * time.Millisecond)
 }

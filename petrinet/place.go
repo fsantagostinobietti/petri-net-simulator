@@ -39,7 +39,7 @@ type Place struct {
 	alert          chan bool
 }
 
-func NewPlace(id string) *Place {
+func newPlace(id string) *Place {
 	return &Place{id: id, sem: semaphore.NewWeighted(1), alert: make(chan bool, 1)}
 }
 func (p *Place) String() string {

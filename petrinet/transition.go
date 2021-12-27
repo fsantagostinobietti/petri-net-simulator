@@ -29,7 +29,7 @@ type Transition struct {
 }
 
 // Transition constructor
-func NewTransition(id string) TransitionI {
+func newTransition(id string) *Transition {
 	t := Transition{id: id, notification: make(chan bool, 1)}
 	return &t
 }

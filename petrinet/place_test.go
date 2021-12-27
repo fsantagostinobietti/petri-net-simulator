@@ -14,7 +14,7 @@ func adderRoutine(wg *sync.WaitGroup, p *Place, iters int) {
 	}
 }
 func TestAddTokensConcurrency(t *testing.T) {
-	p := NewPlace("P")
+	p := newPlace("P")
 	wg := sync.WaitGroup{}
 
 	const N = 100

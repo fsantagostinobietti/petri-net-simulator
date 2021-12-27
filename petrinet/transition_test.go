@@ -167,7 +167,7 @@ func TestTriggeringWithInhibition(test *testing.T) {
 	p1.ConnectTo(t1, 1)
 	t1.EnabledBy(p0, t1.SetLow(0), t1.SetHigh(0))
 	t1.ConnectTo(p0, 1)
-	pEnd := NewPlace("PEnd")
+	pEnd := net.NewPlace("PEnd")
 	t1.ConnectTo(pEnd, 1)
 
 	// run net

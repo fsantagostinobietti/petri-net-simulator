@@ -30,6 +30,7 @@ func TestSimpleTriggering(test *testing.T) {
 	p2.AddTokens(2)
 	net.Start()
 	pEnd.WaitForAlert()
+	net.Stop()
 
 	assert.Equal(test, 1, pEnd.Tokens())
 	assert.Equal(test, 0, p1.Tokens())
@@ -64,6 +65,7 @@ func TestCloseLoopTriggering(test *testing.T) {
 	p0.AddTokens(powInt(2, N))
 	net.Start()
 	pEnd.WaitForAlert()
+	net.Stop()
 
 	assert.Equal(test, powInt(2, N)-1, pEnd.Tokens())
 }
@@ -97,6 +99,7 @@ func TestConcurrentTriggering(test *testing.T) {
 		p.AddTokens(1)
 	}
 	pEnd.WaitForAlert()
+	net.Stop()
 
 	assert.Equal(test, 2*N, pEnd.Tokens())
 	assert.Equal(test, 0, p.Tokens())
@@ -144,6 +147,7 @@ func TestAtomicTriggering(test *testing.T) {
 	p1.AddTokens(powInt(2, N))
 	net.Start()
 	palert.WaitForAlert()
+	net.Stop()
 
 	assert.Equal(test, powInt(2, N)-1, palert.Tokens())
 }
@@ -172,10 +176,11 @@ func TestTriggeringWithInhibition(test *testing.T) {
 
 	// run net
 	p1.AddTokens(N)
-	pEnd.SetAlertOnchange() //AlertTokensGTE(1)
+	pEnd.SetAlertOnchange()
 	net.Start()
-
 	pEnd.WaitForAlert()
+	net.Stop()
+
 	assert.Equal(test, 1, pEnd.Tokens())
 	assert.Equal(test, N-1, p1.Tokens())
 	assert.Equal(test, 1, p0.Tokens())

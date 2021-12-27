@@ -14,10 +14,11 @@ type TransitionI interface {
 	SetLow(low int) func(*EnableArc)
 	SetHigh(high int) func(*EnableArc)
 	InhibitedBy(p PlaceI)
-	// private
+
 	notifyReadiness()
 	addIn(a *Arc)
 	start()
+	stop()
 }
 
 type Transition struct {
@@ -140,7 +141,7 @@ func execute(t *Transition) {
 		logger.Printf("Transition [%s] ... ", t.Id())
 		trigger := <-t.notification
 		if !trigger {
-			logger.Println("Transition stopped")
+			logger.Printf("Transition [%s] stopped", t.Id())
 			return // stop Transition execution
 		}
 		if firingAttempt(t) {

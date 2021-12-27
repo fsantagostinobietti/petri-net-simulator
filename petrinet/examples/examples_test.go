@@ -25,4 +25,5 @@ func TestToggleSwitch(test *testing.T) {
 		}
 		assert.Equal(test, 0, pIn.Tokens())
 	}
+	net.Stop()
 }

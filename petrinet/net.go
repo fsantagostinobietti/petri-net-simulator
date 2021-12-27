@@ -25,3 +25,8 @@ func (n *Net) Start() {
 		t.start()
 	}
 }
+func (n *Net) Stop() {
+	for _, t := range n.transitions {
+		t.stop()
+	}
+}

@@ -7,14 +7,17 @@ import (
 )
 
 type PlaceI interface {
-	// public methods
 	String() string
 	Id() string
 	AddTokens(toks int) bool
 	// Connect Place -> Transition with a weighted Arc
 	ConnectTo(t TransitionI, weight int)
 	Tokens() int
-	// private methods
+	SetAlertFunc(func(PlaceI) bool)
+	// Alert generated on every change in tokens number
+	SetAlertOnchange()
+	WaitForAlert()
+
 	addIn(a *Arc)
 	addOut(a *Arc)
 	lock()
@@ -27,15 +30,17 @@ type PlaceI interface {
 	Place
 */
 type Place struct {
-	id       string
-	toks     int
-	sem      *semaphore.Weighted
-	arcs_in  []*Arc
-	arcs_out []*Arc
+	id             string
+	toks           int
+	sem            *semaphore.Weighted
+	arcs_in        []*Arc
+	arcs_out       []*Arc
+	alert_onchange func(PlaceI) bool
+	alert          chan bool
 }
 
 func NewPlace(id string) *Place {
-	return &Place{id: id, sem: semaphore.NewWeighted(1)}
+	return &Place{id: id, sem: semaphore.NewWeighted(1), alert: make(chan bool, 1)}
 }
 func (p *Place) String() string {
 	s := fmt.Sprintf("Place: ID [%s] Tokens [%d]", p.Id(), p.Tokens())
@@ -50,6 +55,18 @@ func (p *Place) Id() string {
 }
 func (p *Place) Tokens() int {
 	return p.toks
+}
+func (p *Place) SetAlertFunc(f func(PlaceI) bool) {
+	p.alert_onchange = f
+}
+
+func (p *Place) SetAlertOnchange() {
+	p.SetAlertFunc(func(pi PlaceI) bool {
+		return true
+	})
+}
+func (p *Place) WaitForAlert() {
+	<-p.alert
 }
 func (p *Place) lock() {
 	p.sem.Acquire(ctx, 1)
@@ -68,15 +85,31 @@ func (p *Place) notifyTransitions() {
 			a.Notify()
 		}
 	}
-
+}
+func (p *Place) generate_alert() {
+	// non-blocking send
+	select {
+	case p.alert <- true: // alert sent
+	default: // alert dropped
+	}
 }
 func (p *Place) addTokensNoLock(toks int) bool {
-	new_tokens := p.toks + toks
+	old_tokens := p.toks
+	new_tokens := old_tokens + toks
 	if new_tokens < 0 {
 		logger.Panicf("Place [%s] cannot contain negative value for tokens", p.id)
 		return false
 	}
+	// update tokens
 	p.toks = new_tokens
+	if new_tokens != old_tokens { // change in tokens
+		if p.alert_onchange != nil {
+			if p.alert_onchange(p) {
+				// TODO generate alert
+				p.generate_alert()
+			}
+		}
+	}
 	p.notifyTransitions()
 	return true
 }
@@ -101,77 +134,4 @@ func (p *Place) ConnectTo(t TransitionI, weight int) {
 
 	p.addOut(a)
 	t.addIn(a)
-}
-
-/*
-	AlertPlace - a final place (with no fan-out) used to know when number of tokens is as specified
-*/
-
-type AlertPlace struct {
-	id         string
-	arc_in     *Arc
-	toks       int
-	sem        *semaphore.Weighted
-	toks_alert int
-	alert      chan bool
-}
-
-func NewAlertPlace(id string) *AlertPlace {
-	return &AlertPlace{id: id, alert: make(chan bool, 1), sem: semaphore.NewWeighted(1)}
-}
-func (p *AlertPlace) String() string {
-	s := fmt.Sprintf("AlertPlace: ID [%s] Tokens [%d]", p.id, p.toks)
-	return s + " {}"
-}
-func (p *AlertPlace) Id() string {
-	return p.id
-}
-func (p *AlertPlace) addTokensNoLock(toks int) bool {
-	if toks < 0 {
-		return false
-	}
-	p.toks += toks
-	if p.toks >= p.toks_alert {
-		select {
-		case p.alert <- true: // message sent
-		default: // message dropped
-		}
-	}
-	return true
-}
-func (p *AlertPlace) AddTokens(toks int) bool {
-	p.lock()
-	defer p.unlock()
-
-	return p.addTokensNoLock(toks)
-}
-
-func (p *AlertPlace) addIn(a *Arc) {
-	p.arc_in = a
-}
-
-func (p *AlertPlace) addOut(a *Arc) {
-	// no output for FinalPlace
-}
-func (p *AlertPlace) ConnectTo(t TransitionI, weight int) {
-	panic("no output arcs can be connected to AlertPlace")
-}
-
-func (p *AlertPlace) AlertTokensGTE(toks int) {
-	p.toks_alert = toks
-}
-func (p *AlertPlace) WaitForAlert() {
-	<-p.alert
-}
-func (p *AlertPlace) Tokens() int {
-	return p.toks
-}
-func (p *AlertPlace) lock() {
-	p.sem.Acquire(ctx, 1)
-}
-func (p *AlertPlace) trylock() bool {
-	return p.sem.TryAcquire(1)
-}
-func (p *AlertPlace) unlock() {
-	p.sem.Release(1)
 }

@@ -3,7 +3,6 @@ package examples
 import (
 	"petri-net-simulator/petrinet"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,11 +12,12 @@ func TestToggleSwitch(test *testing.T) {
 
 	net := petrinet.NewNet("Test toggle switch")
 	pIn, pOut := BuildToggleSwitch(net, "toggle")
+	pOut.SetAlertOnchange()
 
 	net.Start()
 	for i := 0; i < N; i++ {
 		pIn.AddTokens(1)
-		time.Sleep(50 * time.Millisecond)
+		pOut.WaitForAlert()
 		if i%2 == 0 {
 			assert.Equal(test, 1, pOut.Tokens())
 		} else {

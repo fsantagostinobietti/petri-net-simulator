@@ -10,18 +10,18 @@ import (
 
 func TestSimpleTriggering(test *testing.T) {
 	/* build net:
-	(P1) -1-
-	        \
-	         *-> [T] -1-> (PEnd)
-	        /
-	(P2) -2-
+
+	(P1)───►[T]───►(PEnd)
+	         ▲
+	(P2)──2──┘
+
 	*/
 	net := NewNet("TestNet")
 	p1 := net.NewPlace("P1")
 	p2 := net.NewPlace("P2")
 	t := net.NewTransition("T")
-	pEnd := net.NewAlertPlace("PEnd")
-	pEnd.AlertTokensGTE(1)
+	pEnd := net.NewPlace("PEnd")
+	pEnd.SetAlertOnchange()
 	p1.ConnectTo(t, 1)
 	p2.ConnectTo(t, 2)
 	t.ConnectTo(pEnd, 1)
@@ -52,11 +52,13 @@ func TestCloseLoopTriggering(test *testing.T) {
 	net := NewNet("TestNet")
 	p0 := net.NewPlace("P0")
 	t1 := net.NewTransition("T1")
-	pEnd := net.NewAlertPlace("PEnd")
+	pEnd := net.NewPlace("PEnd")
 	p0.ConnectTo(t1, 2)
 	t1.ConnectTo(p0, 1)
 	t1.ConnectTo(pEnd, 1)
-	pEnd.AlertTokensGTE(powInt(2, N) - 1)
+	pEnd.SetAlertFunc(func(pi PlaceI) bool {
+		return pi.Tokens() >= powInt(2, N)-1
+	})
 
 	// run net
 	p0.AddTokens(powInt(2, N))
@@ -66,7 +68,7 @@ func TestCloseLoopTriggering(test *testing.T) {
 	assert.Equal(test, powInt(2, N)-1, pEnd.Tokens())
 }
 
-// Test multiple transitions triggering concurrently againt the same places
+// Test multiple transitions triggering concurrently against the same places
 func TestConcurrentTriggering(test *testing.T) {
 	disableLogger()
 	const TRANS = 50
@@ -76,8 +78,10 @@ func TestConcurrentTriggering(test *testing.T) {
 	p0 := net.NewPlace("P0")
 	p := net.NewPlace("P")
 	tt := make([]TransitionI, TRANS)
-	pEnd := net.NewAlertPlace("PEnd")
-	pEnd.AlertTokensGTE(2 * N)
+	pEnd := net.NewPlace("PEnd")
+	pEnd.SetAlertFunc(func(pi PlaceI) bool {
+		return pi.Tokens() >= 2*N
+	})
 	for i := 0; i < TRANS; i++ {
 		tt[i] = net.NewTransition("T" + fmt.Sprintf("%d", i))
 		p.ConnectTo(tt[i], 1)
@@ -109,14 +113,13 @@ func TestAtomicTriggering(test *testing.T) {
 	disableLogger()
 
 	const N = 16
-	// build petri-net
-	/*
+	/* build petri-net
 
-	   ┌───►[T1]─────┐
-	   │             ▼
-	 (P1)          (P2)
-	   ▲             │
-	   └────[T2]◄──2─┘
+	  ┌───►[T1]─────┐
+	  │             ▼
+	(P1)          (P2)
+	  ▲             │
+	  └────[T2]◄──2─┘
 
 	*/
 	net := NewNet("Avoid Deadlock")
@@ -131,8 +134,10 @@ func TestAtomicTriggering(test *testing.T) {
 	p2.ConnectTo(t2, 2) // T2 consume 1 token every time it triggers:
 	t2.ConnectTo(p1, 1) //
 
-	palert := net.NewAlertPlace("Alert")
-	palert.AlertTokensGTE(powInt(2, N) - 1)
+	palert := net.NewPlace("Alert")
+	palert.SetAlertFunc(func(pi PlaceI) bool {
+		return pi.Tokens() >= powInt(2, N)-1
+	})
 	t2.ConnectTo(palert, 1) // T2 -(1)-> Palert
 
 	// run petri net
@@ -148,8 +153,8 @@ func TestTriggeringWithInhibition(test *testing.T) {
 
 	/* build net:
 
-	┌──────────┐
-	▼          │
+	  ┌──────────┐
+	  ▼          │
 	(P0)──<0>──●[T1]──►(PEnd)
 	             ▲
 	(P1)─────────┘
@@ -162,12 +167,12 @@ func TestTriggeringWithInhibition(test *testing.T) {
 	p1.ConnectTo(t1, 1)
 	t1.EnabledBy(p0, t1.SetLow(0), t1.SetHigh(0))
 	t1.ConnectTo(p0, 1)
-	pEnd := NewAlertPlace("PEnd")
+	pEnd := NewPlace("PEnd")
 	t1.ConnectTo(pEnd, 1)
 
 	// run net
 	p1.AddTokens(N)
-	pEnd.AlertTokensGTE(1)
+	pEnd.SetAlertOnchange() //AlertTokensGTE(1)
 	net.Start()
 
 	pEnd.WaitForAlert()

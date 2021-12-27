@@ -17,10 +17,12 @@ func main() {
 	const w2 = 1
 	p2.ConnectTo(t1, w2)
 	// T1 -> Pa
-	pa := net1.NewAlertPlace("Pa")
+	pa := net1.NewPlace("Pa")
 	const wa = 1
 	t1.ConnectTo(pa, wa)
-	pa.AlertTokensGTE(2 * wa)
+	pa.SetAlertFunc(func(pi petrinet.PlaceI) bool {
+		return pi.Tokens() >= 2*wa
+	})
 
 	// put tokens into net
 	p1.AddTokens(3 * w1)

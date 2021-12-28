@@ -57,4 +57,5 @@ net.Stop()
 ```go
 net.SavePng("mynet.png")
 ```
-![mynet.png](https://user-images.githubusercontent.com/6057026/147593874-1dbd60d5-46f3-47fc-b85e-594ea72987fb.png)
+
+<img src="https://user-images.githubusercontent.com/6057026/147593874-1dbd60d5-46f3-47fc-b85e-594ea72987fb.png" />

@@ -41,5 +41,5 @@ func main() {
 
 	time.Sleep(100 * time.Millisecond)
 
-	//net1.SavePng("mynet.png")
+	net1.SavePng("mynet.png")
 }

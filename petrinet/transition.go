@@ -13,6 +13,7 @@ type TransitionI interface {
 	EnabledBy(p PlaceI, params ...func(*EnableArc))
 	SetLow(low int) func(*EnableArc)
 	SetHigh(high int) func(*EnableArc)
+	// alias for EnabledBy(p, SetLow(0), SetHigh(0))
 	InhibitedBy(p PlaceI)
 
 	notifyReadiness()

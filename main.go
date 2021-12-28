@@ -40,4 +40,6 @@ func main() {
 	fmt.Println(pa)
 
 	time.Sleep(100 * time.Millisecond)
+
+	//net1.SavePng("mynet.png")
 }

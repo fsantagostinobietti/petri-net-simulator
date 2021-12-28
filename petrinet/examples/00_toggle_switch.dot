@@ -8,7 +8,7 @@ digraph ToggleSwitchNet {
     /* Place Entities */
     {
         node [shape=circle]
-        Pin [label="IN"+"\n°1"]
+        Pin [label="IN"+"\n●1"]
         Pout [label="OUT"]
     }
     /* Transition Entities */
@@ -21,7 +21,7 @@ digraph ToggleSwitchNet {
     /* Relationships */
     Pin -> Ton
     Ton -> Pout
-    Pout -> Ton [arrowhead=odot]
+    Pout -> Ton [arrowhead=dot, label="<0>"]
     Pin -> Toff
     Pout -> Toff
 }

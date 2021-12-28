@@ -11,7 +11,7 @@ func TestToggleSwitch(test *testing.T) {
 	const N = 4
 
 	net := petrinet.NewNet("Test toggle switch")
-	pIn, pOut := BuildToggleSwitch(net, "toggle")
+	pIn, pOut := BuildToggleSwitch(net, "")
 	pOut.SetAlertOnchange()
 
 	net.Start()
@@ -26,4 +26,6 @@ func TestToggleSwitch(test *testing.T) {
 		assert.Equal(test, 0, pIn.Tokens())
 	}
 	net.Stop()
+
+	net.SavePng("00_toggle_switch.png")
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"petri-net-simulator/petrinet"
-	"time"
 )
 
 func main() {
@@ -26,20 +25,22 @@ func main() {
 
 	// put tokens into net
 	p1.AddTokens(3 * w1)
-	p2.AddTokens(1 * w2)
-	time.Sleep(100 * time.Millisecond)
-	net1.Start()
-	p2.AddTokens(1 * w2)
+	p2.AddTokens(2 * w2)
+	net1.AddAnimationFrame()
 
+	// start simulation
+	net1.Start()
 	pa.WaitForAlert()
+
+	net1.AddAnimationFrame()
 	net1.Stop()
 
+	// print status
 	fmt.Println(p1)
 	fmt.Println(p2)
 	fmt.Println(t1)
 	fmt.Println(pa)
 
-	time.Sleep(100 * time.Millisecond)
-
-	net1.SavePng("mynet.png")
+	//net1.SavePng("mynet.png")
+	net1.SaveAnimationAsGif("mynet.gif")
 }

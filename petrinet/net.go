@@ -2,6 +2,11 @@ package petrinet
 
 import (
 	"fmt"
+	"image"
+	"image/color/palette"
+	"image/draw"
+	"image/gif"
+	"os"
 
 	"github.com/goccy/go-graphviz"
 )
@@ -10,6 +15,7 @@ type Net struct {
 	id          string
 	places      []PlaceI
 	transitions []TransitionI
+	frames      []image.Image // animation frames
 }
 
 func NewNet(id string) *Net {
@@ -36,10 +42,12 @@ func (n *Net) Stop() {
 		t.stop()
 	}
 }
+
+// build net graph as graphviz dot text
 func buildDot(n *Net) string {
 	places := ""
 	for _, p := range n.places {
-		toks := ""
+		toks := "\n  "
 		if p.Tokens() > 0 {
 			toks = "\n●" + fmt.Sprintf("%d", p.Tokens())
 		}
@@ -98,4 +106,46 @@ func (n *Net) SavePng(filename string) {
 	if err != nil {
 		logger.Fatal(err)
 	}
+}
+
+func (n *Net) AddAnimationFrame() {
+	dot := buildDot(n)
+	//logger.Println(dot)
+
+	graph, err := graphviz.ParseBytes([]byte(dot))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	g := graphviz.New()
+	img, err := g.RenderImage(graph)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	n.frames = append(n.frames, img)
+}
+
+func (n *Net) SaveAnimationAsGif(filename string) {
+	outGif := &gif.GIF{}
+	outGif.Config = image.Config{}
+	for _, img := range n.frames {
+		// convert image to paletted
+		palettedImage := image.NewPaletted(img.Bounds(), palette.Plan9)
+		draw.Draw(palettedImage, palettedImage.Rect, img, img.Bounds().Min, draw.Over)
+
+		// adjust max width/height
+		if img.Bounds().Max.X > outGif.Config.Width {
+			outGif.Config.Width = img.Bounds().Max.X
+		}
+		if img.Bounds().Max.Y > outGif.Config.Height {
+			outGif.Config.Height = img.Bounds().Max.Y
+		}
+
+		// Add new frame to animated GIF
+		outGif.Image = append(outGif.Image, palettedImage)
+		outGif.Delay = append(outGif.Delay, 100) // 100ths of a second
+	}
+	// save to file
+	f, _ := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, os.ModePerm)
+	defer f.Close()
+	gif.EncodeAll(f, outGif)
 }

@@ -1,12 +1,15 @@
 package petrinet
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color/palette"
 	"image/draw"
 	"image/gif"
+	"image/png"
 	"os"
+	"strings"
 
 	"github.com/goccy/go-graphviz"
 )
@@ -15,7 +18,7 @@ type Net struct {
 	id          string
 	places      []PlaceI
 	transitions []TransitionI
-	frames      []image.Image // animation frames
+	dots        []string // sequence of graphviz in dot format
 }
 
 func NewNet(id string) *Net {
@@ -78,6 +81,9 @@ func buildDot(n *Net) string {
 	return `
 digraph PetriNet { 
 
+	/* Image legend */
+	graph [labeljust="l" label="%LEGEND%"]{}
+
 	/* Place Entities */
 	{ node [shape=circle]
 ` + places + `
@@ -97,20 +103,31 @@ func (n *Net) SavePng(filename string) {
 	dot := buildDot(n)
 	//logger.Println(dot)
 
-	graph, err := graphviz.ParseBytes([]byte(dot))
+	img := dot2image(dot, map[string]string{"%LEGEND%": ""})
+	buf := new(bytes.Buffer)
+	err := png.Encode(buf, img)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	g := graphviz.New()
-	err = g.RenderFilename(graph, graphviz.PNG, filename)
+
+	fo, err := os.Create(filename)
 	if err != nil {
 		logger.Fatal(err)
 	}
+	fo.Write(buf.Bytes())
+	fo.Close()
 }
 
 func (n *Net) AddAnimationFrame() {
 	dot := buildDot(n)
 	//logger.Println(dot)
+	n.dots = append(n.dots, dot)
+}
+func dot2image(dot string, params map[string]string) image.Image {
+	// replace placeholders with actual values
+	for k, v := range params {
+		dot = strings.Replace(dot, k, v, -1)
+	}
 
 	graph, err := graphviz.ParseBytes([]byte(dot))
 	if err != nil {
@@ -121,13 +138,18 @@ func (n *Net) AddAnimationFrame() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	n.frames = append(n.frames, img)
+	return img
 }
 
 func (n *Net) SaveAnimationAsGif(filename string) {
+	frames := make([]image.Image, len(n.dots))
+	for i, dot := range n.dots {
+		frames[i] = dot2image(dot, map[string]string{"%LEGEND%": fmt.Sprintf("\nFrame %d/%d", i+1, len(n.dots))})
+	}
+
 	outGif := &gif.GIF{}
 	outGif.Config = image.Config{}
-	for _, img := range n.frames {
+	for _, img := range frames {
 		// convert image to paletted
 		palettedImage := image.NewPaletted(img.Bounds(), palette.Plan9)
 		draw.Draw(palettedImage, palettedImage.Rect, img, img.Bounds().Min, draw.Over)

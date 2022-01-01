@@ -47,20 +47,31 @@ func (n *Net) Stop() {
 }
 
 // build net graph as graphviz dot text
-func buildDot(n *Net) string {
+func buildDot(n *Net, t0 TransitionI) string {
 	places := ""
+	// Places
 	for _, p := range n.places {
 		toks := "\n  "
 		if p.Tokens() > 0 {
 			toks = "\n●" + fmt.Sprintf("%d", p.Tokens())
 		}
-		places += "P_" + p.Id() + " [label=\"" + p.Id() + toks + "\"]\n"
+		color := ""
+		if t0 != nil && t0.isConnectedToPlace(p) {
+			color = ", style=filled, fillcolor=orange"
+		}
+		places += "P_" + p.Id() + " [label=\"" + p.Id() + toks + "\"" + color + "]\n"
 	}
 	transitions := ""
 	relationships := ""
 	for _, t := range n.transitions {
 		tp := t.(*Transition)
-		transitions += "T_" + t.Id() + " [label=\"" + t.Id() + "\"]\n"
+		// Transitions
+		color := ""
+		if t == t0 {
+			color = ", style=filled, fillcolor=lightblue"
+		}
+		transitions += "T_" + t.Id() + " [label=\"" + t.Id() + "\"" + color + "]\n"
+		// Relationships
 		for _, ain := range tp.arcs_in {
 			relationships += "P_" + ain.P.Id() + " -> " + "T_" + ain.T.Id() + "\n"
 		}
@@ -100,7 +111,7 @@ digraph PetriNet {
 
 // Save Petri Net as PNG
 func (n *Net) SavePng(filename string) {
-	dot := buildDot(n)
+	dot := buildDot(n, nil)
 	//logger.Println(dot)
 
 	img := dot2image(dot, map[string]string{"%LEGEND%": ""})
@@ -118,8 +129,8 @@ func (n *Net) SavePng(filename string) {
 	fo.Close()
 }
 
-func (n *Net) AddAnimationFrame() {
-	dot := buildDot(n)
+func (n *Net) AddAnimationFrame(t TransitionI) {
+	dot := buildDot(n, t)
 	//logger.Println(dot)
 	n.dots = append(n.dots, dot)
 }

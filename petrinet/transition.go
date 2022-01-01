@@ -16,6 +16,7 @@ type TransitionI interface {
 	// alias for EnabledBy(p, SetLow(0), SetHigh(0))
 	InhibitedBy(p PlaceI)
 
+	isConnectedToPlace(p PlaceI) bool
 	notifyReadiness()
 	addIn(a *Arc)
 	start()
@@ -54,6 +55,25 @@ func (t *Transition) addEnableArc(e *EnableArc) {
 }
 func (t *Transition) addOut(a *Arc) {
 	t.arcs_out = append(t.arcs_out, a)
+}
+func (t *Transition) isConnectedToPlace(p PlaceI) bool {
+	for _, a := range t.arcs_in {
+		if a.P == p {
+			return true
+		}
+	}
+	for _, a := range t.arcs_enable {
+		if a.P == p {
+			return true
+		}
+	}
+	for _, a := range t.arcs_out {
+		if a.P == p {
+			return true
+		}
+	}
+
+	return false
 }
 
 /* Locks all In and Out transition places

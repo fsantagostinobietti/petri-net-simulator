@@ -26,13 +26,13 @@ func main() {
 	// put tokens into net
 	p1.AddTokens(3 * w1)
 	p2.AddTokens(2 * w2)
-	net1.AddAnimationFrame()
+	net1.AddAnimationFrame(t1)
 
 	// start simulation
 	net1.Start()
 	pa.WaitForAlert()
 
-	net1.AddAnimationFrame()
+	net1.AddAnimationFrame(nil)
 	net1.Stop()
 
 	// print status

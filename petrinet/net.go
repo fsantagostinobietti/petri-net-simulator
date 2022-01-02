@@ -45,6 +45,10 @@ func (n *Net) NewTransition(id string) TransitionI {
 	return t
 }
 func (n *Net) Start() {
+	// initial frame
+	dot := buildDot(n, nil)
+	n.addAnimationFrame([]frame{{dot, 200}})
+
 	for _, t := range n.transitions {
 		t.start()
 	}

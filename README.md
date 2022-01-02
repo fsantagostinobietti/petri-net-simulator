@@ -42,6 +42,7 @@ p1.AddTokens(3 * w1)
 p2.AddTokens(1 * w2)
 
 // start simulation
+net.EnableAnimation(true)
 net.Start()
 
 // tokens can be added also during simulation
@@ -60,4 +61,11 @@ net.SavePng("mynet.png")
 
 ![](mynet.png)
 
+
+### Save Net animation as Gif
+```go
+net.SaveAnimationAsGif("mynet.gif")
+```
+
+![](mynet.gif)
 

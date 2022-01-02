@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/color"
 	"image/color/palette"
 	"image/draw"
 	"image/gif"
@@ -15,14 +16,22 @@ import (
 )
 
 type Net struct {
-	id          string
-	places      []PlaceI
-	transitions []TransitionI
-	dots        []string // sequence of graphviz in dot format
+	id           string
+	places       []PlaceI
+	transitions  []TransitionI
+	animation    bool // enable/disable animation recording
+	animationSem chan bool
+	frames       []frame // animation sequence in graphviz/dot format
+}
+
+type frame struct {
+	dot   string
+	delay int
 }
 
 func NewNet(id string) *Net {
-	net := Net{id: id}
+	net := Net{id: id, animationSem: make(chan bool, 1)}
+	net.animationSem <- true
 	return &net
 }
 func (n *Net) NewPlace(id string) PlaceI {
@@ -31,7 +40,7 @@ func (n *Net) NewPlace(id string) PlaceI {
 	return p
 }
 func (n *Net) NewTransition(id string) TransitionI {
-	t := newTransition(id)
+	t := newTransition(n, id)
 	n.transitions = append(n.transitions, t)
 	return t
 }
@@ -110,7 +119,7 @@ digraph PetriNet {
 }
 
 // Save Petri Net as PNG
-func (n *Net) SavePng(filename string) {
+func (n *Net) SavePng(filename string) error {
 	dot := buildDot(n, nil)
 	//logger.Println(dot)
 
@@ -118,21 +127,26 @@ func (n *Net) SavePng(filename string) {
 	buf := new(bytes.Buffer)
 	err := png.Encode(buf, img)
 	if err != nil {
-		logger.Fatal(err)
+		return err
 	}
 
 	fo, err := os.Create(filename)
 	if err != nil {
-		logger.Fatal(err)
+		return err
 	}
+	defer fo.Close()
 	fo.Write(buf.Bytes())
-	fo.Close()
+	return NoError
 }
 
-func (n *Net) AddAnimationFrame(t TransitionI) {
-	dot := buildDot(n, t)
-	//logger.Println(dot)
-	n.dots = append(n.dots, dot)
+func (n *Net) addAnimationFrame(frames []frame) {
+	if n.animation {
+		for _, frame := range frames {
+			<-n.animationSem // wait for green light
+			n.frames = append(n.frames, frame)
+			n.animationSem <- true // release semaphore
+		}
+	}
 }
 func dot2image(dot string, params map[string]string) image.Image {
 	// replace placeholders with actual values
@@ -152,33 +166,49 @@ func dot2image(dot string, params map[string]string) image.Image {
 	return img
 }
 
-func (n *Net) SaveAnimationAsGif(filename string) {
-	frames := make([]image.Image, len(n.dots))
-	for i, dot := range n.dots {
-		frames[i] = dot2image(dot, map[string]string{"%LEGEND%": fmt.Sprintf("\nFrame %d/%d", i+1, len(n.dots))})
+func (n *Net) EnableAnimation(enable bool) {
+	n.animation = enable
+}
+
+func (n *Net) SaveAnimationAsGif(filename string) error {
+	if !n.animation {
+		return fmt.Errorf("SaveAnimationAsGif() failed for [%s]! Enable animation first", n.id)
 	}
+	imgs := make([]image.Image, len(n.frames)+1)
+	delays := make([]int, len(n.frames)+1)
+	width, height := 0, 0
+	for i, frame := range n.frames {
+		img := dot2image(frame.dot, map[string]string{"%LEGEND%": fmt.Sprintf("\nFrame %d/%d", i+1, len(n.frames))})
+		// adjust max width/height
+		if img.Bounds().Max.X > width {
+			width = img.Bounds().Max.X
+		}
+		if img.Bounds().Max.Y > height {
+			height = img.Bounds().Max.Y
+		}
+		imgs[i+1] = img
+		delays[i+1] = frame.delay
+	}
+	// start animatin with a blanck image
+	blankImg := image.NewPaletted(image.Rect(0, 0, width, height), color.Palette([]color.Color{color.White}))
+	imgs[0] = blankImg
+	delays[0] = 200
 
 	outGif := &gif.GIF{}
-	outGif.Config = image.Config{}
-	for _, img := range frames {
-		// convert image to paletted
+	outGif.Config = image.Config{Width: width, Height: height}
+	for i, img := range imgs {
+		// convert to paletted image
 		palettedImage := image.NewPaletted(img.Bounds(), palette.Plan9)
 		draw.Draw(palettedImage, palettedImage.Rect, img, img.Bounds().Min, draw.Over)
 
-		// adjust max width/height
-		if img.Bounds().Max.X > outGif.Config.Width {
-			outGif.Config.Width = img.Bounds().Max.X
-		}
-		if img.Bounds().Max.Y > outGif.Config.Height {
-			outGif.Config.Height = img.Bounds().Max.Y
-		}
-
 		// Add new frame to animated GIF
 		outGif.Image = append(outGif.Image, palettedImage)
-		outGif.Delay = append(outGif.Delay, 100) // 100ths of a second
+		outGif.Delay = append(outGif.Delay, delays[i]) // 100ths of a second
 	}
 	// save to file
-	f, _ := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, os.ModePerm)
+	f, _ := os.Create(filename)
 	defer f.Close()
 	gif.EncodeAll(f, outGif)
+
+	return NoError
 }

@@ -26,21 +26,16 @@ func main() {
 	// put tokens into net
 	p1.AddTokens(3 * w1)
 	p2.AddTokens(2 * w2)
-	net1.AddAnimationFrame(t1)
 
 	// start simulation
+	net1.EnableAnimation(true)
 	net1.Start()
 	pa.WaitForAlert()
-
-	net1.AddAnimationFrame(nil)
 	net1.Stop()
 
-	// print status
-	fmt.Println(p1)
-	fmt.Println(p2)
-	fmt.Println(t1)
-	fmt.Println(pa)
-
-	//net1.SavePng("mynet.png")
-	net1.SaveAnimationAsGif("mynet.gif")
+	//err := net1.SavePng("mynet.png")
+	err := net1.SaveAnimationAsGif("mynet.gif")
+	if err != nil {
+		fmt.Println(err)
+	}
 }

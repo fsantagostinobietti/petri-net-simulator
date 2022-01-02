@@ -17,3 +17,6 @@ func disableLogger() {
 
 // used bu sync.semaphore
 var ctx = context.TODO()
+
+// constants
+var NoError error = nil

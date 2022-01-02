@@ -25,6 +25,7 @@ type TransitionI interface {
 
 type Transition struct {
 	id           string
+	net          *Net // parent net
 	arcs_in      []*Arc
 	arcs_enable  []*EnableArc
 	arcs_out     []*Arc
@@ -32,8 +33,15 @@ type Transition struct {
 }
 
 // Transition constructor
-func newTransition(id string) *Transition {
-	t := Transition{id: id, notification: make(chan bool, 1)}
+func newTransition(n *Net, id string) *Transition {
+	t := Transition{
+		id:           id,
+		net:          n,
+		arcs_in:      []*Arc{},
+		arcs_enable:  []*EnableArc{},
+		arcs_out:     []*Arc{},
+		notification: make(chan bool, 1),
+	}
 	return &t
 }
 func (t *Transition) Id() string {
@@ -149,11 +157,15 @@ func firingAttempt(t *Transition) bool {
 	lockPlaces(t, all_places)
 	defer unlockPlaces(t, all_places)
 
+	preDot := buildDot(t.net, t)
 	ok := consumeInTokens(t)
 	if ok {
 		for _, arc := range t.arcs_out {
 			arc.FireTokens()
 		}
+		postDot := buildDot(t.net, nil)
+
+		t.net.addAnimationFrame([]frame{{preDot, 200}, {postDot, 200}})
 	}
 	return ok
 }

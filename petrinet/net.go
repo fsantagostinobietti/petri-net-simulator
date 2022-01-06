@@ -90,10 +90,19 @@ func buildDot(n *Net, t0 TransitionI) string {
 		}
 		for _, aen := range tp.arcs_enable {
 			label := ""
-			if aen.low == aen.high {
+			low, high := aen.low, aen.high
+			if low == high && low != undef {
 				label = "<" + fmt.Sprintf("%d", aen.low) + ">"
 			} else {
-				label = "<" + fmt.Sprintf("%d", aen.low) + "," + fmt.Sprintf("%d", aen.high) + ">"
+				label += "<"
+				if low != undef {
+					label += fmt.Sprintf("%d", low)
+				}
+				label += ","
+				if high != undef {
+					label += fmt.Sprintf("%d", high)
+				}
+				label += ">"
 			}
 			relationships += "P_" + aen.P.Id() + " -> " + "T_" + aen.T.Id() + " [arrowhead=dot, label=\"" + label + "\"]\n"
 		}

@@ -50,6 +50,13 @@ type EnableArc struct {
 	high int // <=high
 }
 
+func NewEnableArc(id string) *EnableArc {
+	arc := EnableArc{}
+	arc.Id = id
+	arc.low = undef
+	arc.high = undef
+	return &arc
+}
 func (a *EnableArc) IsEnabled() bool {
 	toks := a.P.Tokens()
 	if a.low != undef && toks < a.low {

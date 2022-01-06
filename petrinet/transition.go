@@ -226,8 +226,8 @@ func (t *Transition) SetHigh(high int) func(*EnableArc) {
 	}
 }
 func (t *Transition) EnabledBy(p PlaceI, params ...func(*EnableArc)) {
-	e := new(EnableArc)
-	e.Id = fmt.Sprintf("%s >● %s", p.Id(), t.Id())
+	id := fmt.Sprintf("%s >● %s", p.Id(), t.Id())
+	e := NewEnableArc(id)
 	e.P = p
 	e.T = t
 	// set params

@@ -29,3 +29,24 @@ func TestToggleSwitch(test *testing.T) {
 
 	net.SavePng("00_toggle_switch.png")
 }
+
+func TestModuleNCounter(test *testing.T) {
+	const N = 5
+
+	net := petrinet.NewNet("Test module-N counter")
+	pIn, pCnt := BuildModuloNCounter(net, "", N)
+	net.SavePng("01_modulo_N_counter.png")
+
+	pIn.AddTokens(2 * N)
+	pIn.SetAlertFunc(func(pi petrinet.PlaceI) bool {
+		return pi.Tokens() == 0
+	})
+
+	net.EnableAnimation(true)
+	net.Start()
+	pIn.WaitForAlert()
+	assert.Equal(test, 0, pCnt.Tokens())
+	net.Stop()
+
+	net.SaveAnimationAsGif("01_modulo_N_counter.gif")
+}

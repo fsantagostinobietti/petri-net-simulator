@@ -67,3 +67,12 @@ func (a *EnableArc) IsEnabled() bool {
 	}
 	return true
 }
+func (a *EnableArc) Notify(toks int) {
+	if a.low != undef && toks < a.low {
+		return
+	}
+	if a.high != undef && toks > a.high {
+		return
+	}
+	a.T.notifyReadiness()
+}

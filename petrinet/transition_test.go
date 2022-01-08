@@ -74,7 +74,7 @@ func TestCloseLoopTriggering(test *testing.T) {
 func TestConcurrentTriggering(test *testing.T) {
 	disableLogger()
 	const TRANS = 50
-	const N = 1000 * TRANS
+	const N = 100 * TRANS
 	// build petri-net
 	net := NewNet("TestNet")
 	p0 := net.NewPlace("P0")

@@ -20,6 +20,7 @@ type PlaceI interface {
 
 	addIn(a *Arc)
 	addOut(a *Arc)
+	addEnableArc(a *EnableArc)
 	lock()
 	trylock() bool
 	unlock()
@@ -35,6 +36,7 @@ type Place struct {
 	sem            *semaphore.Weighted
 	arcs_in        []*Arc
 	arcs_out       []*Arc
+	arcs_enable    []*EnableArc
 	alert_onchange func(PlaceI) bool
 	alert          chan bool
 }
@@ -85,6 +87,9 @@ func (p *Place) notifyTransitions() {
 			a.Notify()
 		}
 	}
+	for _, a := range p.arcs_enable {
+		a.Notify(p.Tokens())
+	}
 }
 func (p *Place) generate_alert() {
 	// non-blocking send
@@ -124,6 +129,9 @@ func (p *Place) addIn(a *Arc) {
 }
 func (p *Place) addOut(a *Arc) {
 	p.arcs_out = append(p.arcs_out, a)
+}
+func (p *Place) addEnableArc(a *EnableArc) {
+	p.arcs_enable = append(p.arcs_enable, a)
 }
 func (p *Place) ConnectTo(t TransitionI, weight int) {
 	a := new(Arc)

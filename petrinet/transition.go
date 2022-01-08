@@ -235,6 +235,7 @@ func (t *Transition) EnabledBy(p PlaceI, params ...func(*EnableArc)) {
 		f(e)
 	}
 	t.addEnableArc(e)
+	p.addEnableArc(e)
 }
 
 func (t *Transition) InhibitedBy(p PlaceI) {

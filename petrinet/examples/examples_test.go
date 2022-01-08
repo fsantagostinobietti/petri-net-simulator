@@ -78,3 +78,37 @@ func TestAdder(test *testing.T) {
 
 	//net.SaveAnimationAsGif("02_adder.gif")
 }
+
+func TestAdder3(test *testing.T) {
+	net := petrinet.NewNet("Test 3-Adder")
+	pX := net.NewPlace("X")
+	pY := net.NewPlace("Y")
+	pZ := net.NewPlace("Z")
+
+	pR1, pS1, tN1 := BuildAdder(net, "A1", pX, pY)
+	pR2, pS2, tN2 := BuildAdder(net, "A2", pS1, pZ)
+	tN1.ConnectTo(pR2, 1)
+
+	pNxt := net.NewPlace("Next")
+	tN2.ConnectTo(pNxt, 1)
+	pNxt.SetAlertOnchange()
+	net.SavePng("02_adder3.png")
+
+	const X = 3
+	const Y = 1
+	const Z = 2
+	pX.AddTokens(X)
+	pY.AddTokens(Y)
+	pZ.AddTokens(Z)
+
+	net.EnableAnimation(true)
+	net.Start()
+	pR1.AddTokens(1) // run adder net
+	pNxt.WaitForAlert()
+	assert.Equal(test, X+Y+Z, pS2.Tokens())
+	assert.Equal(test, 0, pX.Tokens())
+	assert.Equal(test, 0, pY.Tokens())
+	net.Stop()
+
+	net.SaveAnimationAsGif("02_adder3.gif")
+}

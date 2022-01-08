@@ -185,6 +185,7 @@ func (n *Net) EnableAnimation(enable bool) {
 	n.animation = enable
 }
 
+// NB: requires 'EnableAnimation(true)' before 'Start()'
 func (n *Net) SaveAnimationAsGif(filename string) error {
 	if !n.animation {
 		return fmt.Errorf("SaveAnimationAsGif() failed for [%s]! Enable animation first", n.id)

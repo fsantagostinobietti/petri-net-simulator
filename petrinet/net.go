@@ -86,28 +86,30 @@ func buildDot(n *Net, t0 TransitionI) string {
 		transitions += "T_" + t.Id() + " [label=\"" + t.Id() + "\"" + color + "]\n"
 		// Relationships
 		for _, ain := range tp.arcs_in {
-			relationships += "P_" + ain.P.Id() + " -> " + "T_" + ain.T.Id() + "\n"
-		}
-		for _, aen := range tp.arcs_enable {
-			label := ""
-			low, high := aen.low, aen.high
-			if low == high && low != undef {
-				label = "<" + fmt.Sprintf("%d", aen.low) + ">"
-			} else {
-				label += "<"
-				if low != undef {
-					label += fmt.Sprintf("%d", low)
+			relationships += "P_" + ain.Place().Id() + " -> " + "T_" + ain.Transition().Id()
+			switch aen := ain.(type) {
+			case *EnableArc:
+				label := ""
+				low, high := aen.low, aen.high
+				if low == high && low != undef {
+					label = "<" + fmt.Sprintf("%d", aen.low) + ">"
+				} else {
+					label += "<"
+					if low != undef {
+						label += fmt.Sprintf("%d", low)
+					}
+					label += ","
+					if high != undef {
+						label += fmt.Sprintf("%d", high)
+					}
+					label += ">"
 				}
-				label += ","
-				if high != undef {
-					label += fmt.Sprintf("%d", high)
-				}
-				label += ">"
+				relationships += " [arrowhead=dot, label=\"" + label + "\"]"
 			}
-			relationships += "P_" + aen.P.Id() + " -> " + "T_" + aen.T.Id() + " [arrowhead=dot, label=\"" + label + "\"]\n"
+			relationships += "\n"
 		}
 		for _, aout := range tp.arcs_out {
-			relationships += "T_" + aout.T.Id() + " -> " + "P_" + aout.P.Id() + "\n"
+			relationships += "T_" + aout.Transition().Id() + " -> " + "P_" + aout.Place().Id() + "\n"
 		}
 	}
 

@@ -18,7 +18,7 @@ type TransitionI interface {
 
 	isConnectedToPlace(p PlaceI) bool
 	notifyReadiness()
-	addIn(a *Arc)
+	addIn(a ArcI)
 	start()
 	stop()
 }
@@ -26,9 +26,8 @@ type TransitionI interface {
 type Transition struct {
 	id           string
 	net          *Net // parent net
-	arcs_in      []*Arc
-	arcs_enable  []*EnableArc
-	arcs_out     []*Arc
+	arcs_in      []ArcI
+	arcs_out     []ArcI
 	notification chan bool
 }
 
@@ -37,9 +36,8 @@ func newTransition(n *Net, id string) *Transition {
 	t := Transition{
 		id:           id,
 		net:          n,
-		arcs_in:      []*Arc{},
-		arcs_enable:  []*EnableArc{},
-		arcs_out:     []*Arc{},
+		arcs_in:      []ArcI{},
+		arcs_out:     []ArcI{},
 		notification: make(chan bool, 1),
 	}
 	return &t
@@ -55,28 +53,20 @@ func (t *Transition) String() string {
 	}
 	return s + " {" + aa + "}"
 }
-func (t *Transition) addIn(a *Arc) {
+func (t *Transition) addIn(a ArcI) {
 	t.arcs_in = append(t.arcs_in, a)
-}
-func (t *Transition) addEnableArc(e *EnableArc) {
-	t.arcs_enable = append(t.arcs_enable, e)
 }
 func (t *Transition) addOut(a *Arc) {
 	t.arcs_out = append(t.arcs_out, a)
 }
 func (t *Transition) isConnectedToPlace(p PlaceI) bool {
 	for _, a := range t.arcs_in {
-		if a.P == p {
-			return true
-		}
-	}
-	for _, a := range t.arcs_enable {
-		if a.P == p {
+		if a.Place() == p {
 			return true
 		}
 	}
 	for _, a := range t.arcs_out {
-		if a.P == p {
+		if a.Place() == p {
 			return true
 		}
 	}
@@ -123,15 +113,9 @@ func unlockPlaces(t *Transition, places *set.Set) {
 	})
 }
 func consumeInTokens(t *Transition) bool {
-	// verify tokens can be consumed
+	// verify if tokens can be consumed
 	for _, arc := range t.arcs_in {
 		if !arc.TestConsumeTokens() { // input place has not enought tokens
-			return false
-		}
-	}
-	// verify enabling arcs
-	for _, enable := range t.arcs_enable {
-		if !enable.IsEnabled() {
 			return false
 		}
 	}
@@ -142,13 +126,13 @@ func consumeInTokens(t *Transition) bool {
 	return true
 }
 func uniquePlaces(t *Transition) *set.Set {
-	arcs := make([]*Arc, 0, len(t.arcs_in)+len(t.arcs_out))
+	arcs := make([]ArcI, 0, len(t.arcs_in)+len(t.arcs_out))
 	arcs = append(arcs, t.arcs_in...)
 	arcs = append(arcs, t.arcs_out...)
 
 	uniques := set.New()
 	for _, a := range arcs {
-		uniques.Insert(a.P)
+		uniques.Insert(a.Place())
 	}
 	return uniques
 }
@@ -234,8 +218,8 @@ func (t *Transition) EnabledBy(p PlaceI, params ...func(*EnableArc)) {
 	for _, f := range params {
 		f(e)
 	}
-	t.addEnableArc(e)
-	p.addEnableArc(e)
+	t.addIn(e)
+	p.addOut(e)
 }
 
 func (t *Transition) InhibitedBy(p PlaceI) {

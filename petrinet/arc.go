@@ -5,6 +5,17 @@ import "fmt"
 /*
 	[P]lace <-> [T]ransition arc (both ways)
 */
+type ArcI interface {
+	//Id() string
+	String() string
+	Place() PlaceI
+	Transition() TransitionI
+	Notify(toks int)
+	TestConsumeTokens() bool
+	ConsumeTokens()
+	FireTokens()
+}
+
 type Arc struct {
 	Id     string
 	Weight int
@@ -15,10 +26,18 @@ type Arc struct {
 func (a *Arc) String() string {
 	return fmt.Sprintf("ID [%s] Weight [%d]", a.Id, a.Weight)
 }
+func (a *Arc) Place() PlaceI {
+	return a.P
+}
+func (a *Arc) Transition() TransitionI {
+	return a.T
+}
 
 // Used by Place to notify Transition its readiness
-func (a *Arc) Notify() {
-	a.T.notifyReadiness()
+func (a *Arc) Notify(toks int) {
+	if toks >= a.Weight {
+		a.T.notifyReadiness()
+	}
 }
 
 //
@@ -57,6 +76,15 @@ func NewEnableArc(id string) *EnableArc {
 	arc.high = undef
 	return &arc
 }
+func (a *EnableArc) String() string {
+	return fmt.Sprintf("ID [%s] Low [%d] High [%d]", a.Id, a.low, a.high)
+}
+func (a *EnableArc) Place() PlaceI {
+	return a.P
+}
+func (a *EnableArc) Transition() TransitionI {
+	return a.T
+}
 func (a *EnableArc) IsEnabled() bool {
 	toks := a.P.Tokens()
 	if a.low != undef && toks < a.low {
@@ -67,12 +95,13 @@ func (a *EnableArc) IsEnabled() bool {
 	}
 	return true
 }
+func (a *EnableArc) TestConsumeTokens() bool {
+	return a.IsEnabled()
+}
+func (a *EnableArc) ConsumeTokens() {}
+func (a *EnableArc) FireTokens()    {}
 func (a *EnableArc) Notify(toks int) {
-	if a.low != undef && toks < a.low {
-		return
+	if a.IsEnabled() {
+		a.T.notifyReadiness()
 	}
-	if a.high != undef && toks > a.high {
-		return
-	}
-	a.T.notifyReadiness()
 }

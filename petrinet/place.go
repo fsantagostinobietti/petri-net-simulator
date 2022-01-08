@@ -18,9 +18,8 @@ type PlaceI interface {
 	SetAlertOnchange()
 	WaitForAlert()
 
-	addIn(a *Arc)
-	addOut(a *Arc)
-	addEnableArc(a *EnableArc)
+	addIn(a ArcI)
+	addOut(a ArcI)
 	lock()
 	trylock() bool
 	unlock()
@@ -34,9 +33,8 @@ type Place struct {
 	id             string
 	toks           int
 	sem            *semaphore.Weighted
-	arcs_in        []*Arc
-	arcs_out       []*Arc
-	arcs_enable    []*EnableArc
+	arcs_in        []ArcI
+	arcs_out       []ArcI
 	alert_onchange func(PlaceI) bool
 	alert          chan bool
 }
@@ -83,15 +81,10 @@ func (p *Place) unlock() {
 // Place notify all connected Transitions if ready for triggering
 func (p *Place) notifyTransitions() {
 	for _, a := range p.arcs_out {
-		if p.toks >= a.Weight {
-			a.Notify()
-		}
-	}
-	for _, a := range p.arcs_enable {
 		a.Notify(p.Tokens())
 	}
 }
-func (p *Place) generate_alert() {
+func (p *Place) generateAlert() {
 	// non-blocking send
 	select {
 	case p.alert <- true: // alert sent
@@ -108,11 +101,8 @@ func (p *Place) addTokensNoLock(toks int) bool {
 	// update tokens
 	p.toks = new_tokens
 	if new_tokens != old_tokens { // change in tokens
-		if p.alert_onchange != nil {
-			if p.alert_onchange(p) {
-				// TODO generate alert
-				p.generate_alert()
-			}
+		if p.alert_onchange != nil && p.alert_onchange(p) {
+			p.generateAlert()
 		}
 	}
 	p.notifyTransitions()
@@ -124,14 +114,11 @@ func (p *Place) AddTokens(toks int) bool {
 
 	return p.addTokensNoLock(toks)
 }
-func (p *Place) addIn(a *Arc) {
+func (p *Place) addIn(a ArcI) {
 	p.arcs_in = append(p.arcs_in, a)
 }
-func (p *Place) addOut(a *Arc) {
+func (p *Place) addOut(a ArcI) {
 	p.arcs_out = append(p.arcs_out, a)
-}
-func (p *Place) addEnableArc(a *EnableArc) {
-	p.arcs_enable = append(p.arcs_enable, a)
 }
 func (p *Place) ConnectTo(t TransitionI, weight int) {
 	a := new(Arc)

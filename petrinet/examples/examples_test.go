@@ -50,3 +50,31 @@ func TestModuleNCounter(test *testing.T) {
 
 	net.SaveAnimationAsGif("01_modulo_N_counter.gif")
 }
+
+func TestAdder(test *testing.T) {
+	net := petrinet.NewNet("Test Adder")
+	pX := net.NewPlace("X")
+	pY := net.NewPlace("Y")
+	pRun, pSum, tNxt := BuildAdder(net, "", pX, pY)
+	pNxt := net.NewPlace("Next")
+	tNxt.ConnectTo(pNxt, 1)
+	pNxt.SetAlertOnchange()
+	net.SavePng("02_adder.png")
+
+	const X = 3
+	const Y = 2
+	pX.AddTokens(X)
+	pY.AddTokens(Y)
+
+	net.EnableAnimation(true)
+	net.Start()
+	pRun.AddTokens(1) // run adder net
+	pNxt.WaitForAlert()
+	assert.Equal(test, X+Y, pSum.Tokens())
+	assert.Equal(test, 0, pX.Tokens())
+	assert.Equal(test, 0, pY.Tokens())
+	assert.Equal(test, 0, pRun.Tokens())
+	net.Stop()
+
+	net.SaveAnimationAsGif("02_adder.gif")
+}

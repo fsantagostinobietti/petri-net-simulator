@@ -76,5 +76,5 @@ func TestAdder(test *testing.T) {
 	assert.Equal(test, 0, pRun.Tokens())
 	net.Stop()
 
-	net.SaveAnimationAsGif("02_adder.gif")
+	//net.SaveAnimationAsGif("02_adder.gif")
 }

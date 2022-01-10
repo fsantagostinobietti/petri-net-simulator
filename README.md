@@ -69,3 +69,5 @@ net.SaveAnimationAsGif("mynet.gif")
 
 ![](mynet.gif)
 
+### Examples
+More advanced examples [here](/petrinet/examples).

@@ -110,5 +110,5 @@ func TestAdder3(test *testing.T) {
 	assert.Equal(test, 0, pY.Tokens())
 	net.Stop()
 
-	net.SaveAnimationAsGif("02_adder3.gif")
+	//net.SaveAnimationAsGif("02_adder3.gif")
 }

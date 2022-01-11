@@ -73,8 +73,8 @@ func TestCloseLoopTriggering(test *testing.T) {
 // Test multiple transitions triggering concurrently against the same places
 func TestConcurrentTriggering(test *testing.T) {
 	disableLogger()
-	const TRANS = 50
-	const N = 100 * TRANS
+	const TRANS = 40
+	const N = 50 * TRANS
 	// build petri-net
 	net := NewNet("TestNet")
 	p0 := net.NewPlace("P0")

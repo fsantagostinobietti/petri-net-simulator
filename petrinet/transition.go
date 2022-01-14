@@ -9,11 +9,15 @@ import (
 type TransitionI interface {
 	Id() string
 	String() string
+	// Define new conection (arc) from Transition to Place
 	ConnectTo(p PlaceI, weight int)
+	// Define if Transition is enabled by Place
 	EnabledBy(p PlaceI, params ...func(*EnableArc))
+	// Set lower bound in weight range
 	SetLow(low int) func(*EnableArc)
+	// Set upper bound in weight range
 	SetHigh(high int) func(*EnableArc)
-	// alias for EnabledBy(p, SetLow(0), SetHigh(0))
+	// Alias for EnabledBy(p, SetLow(0), SetHigh(0))
 	InhibitedBy(p PlaceI)
 
 	isConnectedToPlace(p PlaceI) bool
@@ -23,6 +27,9 @@ type TransitionI interface {
 	stop()
 }
 
+/*
+	Transition
+*/
 type Transition struct {
 	id           string
 	net          *Net // parent net
@@ -60,27 +67,22 @@ func (t *Transition) addOut(a *Arc) {
 	t.arcs_out = append(t.arcs_out, a)
 }
 func (t *Transition) isConnectedToPlace(p PlaceI) bool {
-	for _, a := range t.arcs_in {
-		if a.Place() == p {
-			return true
-		}
-	}
-	for _, a := range t.arcs_out {
-		if a.Place() == p {
-			return true
-		}
-	}
+	arcs := make([]ArcI, 0, len(t.arcs_in)+len(t.arcs_out))
+	arcs = append(arcs, t.arcs_in...)
+	arcs = append(arcs, t.arcs_out...)
 
+	for _, a := range arcs {
+		if a.Place() == p {
+			return true
+		}
+	}
 	return false
 }
 
-/* Locks all In and Out transition places
- */
+// Locks all places
 func lockPlaces(t *Transition, places *set.Set) {
-
 	for {
 		locked := make([]PlaceI, 0, places.Len())
-
 		// try locking places
 		success := true
 		places.Do(func(i interface{}) {
@@ -93,7 +95,6 @@ func lockPlaces(t *Transition, places *set.Set) {
 				}
 			}
 		})
-
 		if success {
 			logger.Printf("Transition [%s] lockPlaces() completed successfully!", t.Id())
 			return // all places locked successfully
@@ -106,6 +107,7 @@ func lockPlaces(t *Transition, places *set.Set) {
 	}
 }
 
+// Unlocks all places
 func unlockPlaces(t *Transition, places *set.Set) {
 	places.Do(func(i interface{}) {
 		place := i.(PlaceI)
@@ -115,7 +117,7 @@ func unlockPlaces(t *Transition, places *set.Set) {
 func consumeInTokens(t *Transition) bool {
 	// verify if tokens can be consumed
 	for _, arc := range t.arcs_in {
-		if !arc.TestConsumeTokens() { // input place has not enought tokens
+		if !arc.IsEnabled() { // input place has not enought tokens
 			return false
 		}
 	}
@@ -125,6 +127,8 @@ func consumeInTokens(t *Transition) bool {
 	}
 	return true
 }
+
+// Compute set of uninque places (in and out) of this transition
 func uniquePlaces(t *Transition) *set.Set {
 	arcs := make([]ArcI, 0, len(t.arcs_in)+len(t.arcs_out))
 	arcs = append(arcs, t.arcs_in...)
@@ -136,18 +140,22 @@ func uniquePlaces(t *Transition) *set.Set {
 	}
 	return uniques
 }
+
+// Firing operation in a transactional (atomic) way
 func firingAttempt(t *Transition) bool {
 	all_places := uniquePlaces(t)
+	// Firing () must be executed as an atomic operation to guarantee consistency.
+	// That's why, first of all, places are locked.
 	lockPlaces(t, all_places)
 	defer unlockPlaces(t, all_places)
 
-	preDot := buildDot(t.net, t)
+	preDot := t.net.buildDot(t)
 	ok := consumeInTokens(t)
 	if ok {
 		for _, arc := range t.arcs_out {
 			arc.FireTokens()
 		}
-		postDot := buildDot(t.net, nil)
+		postDot := t.net.buildDot(nil)
 
 		t.net.addAnimationFrame([]frame{{preDot, 200}, {postDot, 200}})
 	}
@@ -166,6 +174,8 @@ func execute(t *Transition) {
 		}
 	}
 }
+
+// Start transition as gorutine
 func (t *Transition) start() {
 	go execute(t)
 	logger.Printf("Transition [%s] started ", t.Id())
@@ -190,7 +200,7 @@ func (t *Transition) notifyReadiness() {
 func (t *Transition) ConnectTo(p PlaceI, weight int) {
 	// create arc
 	a := new(Arc)
-	a.Id = fmt.Sprintf("%s >%d> %s", t.Id(), weight, p.Id())
+	a.id = fmt.Sprintf("%s >%d> %s", t.Id(), weight, p.Id())
 	a.Weight = weight
 	a.P = p
 	a.T = t
@@ -211,7 +221,7 @@ func (t *Transition) SetHigh(high int) func(*EnableArc) {
 }
 func (t *Transition) EnabledBy(p PlaceI, params ...func(*EnableArc)) {
 	id := fmt.Sprintf("%s >● %s", p.Id(), t.Id())
-	e := NewEnableArc(id)
+	e := newEnableArc(id)
 	e.P = p
 	e.T = t
 	// set params

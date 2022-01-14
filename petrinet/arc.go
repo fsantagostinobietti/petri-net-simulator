@@ -2,29 +2,35 @@ package petrinet
 
 import "fmt"
 
-/*
-	[P]lace <-> [T]ransition arc (both ways)
-*/
+/* Arc used to link	Place and Transition (both ways)
+ */
 type ArcI interface {
-	//Id() string
+	Id() string
 	String() string
 	Place() PlaceI
 	Transition() TransitionI
-	Notify(toks int)
-	TestConsumeTokens() bool
+	// Used by Place to notify Transition its readiness
+	Notify()
+	// Test if it's possible consume tokens from (input) Place
+	IsEnabled() bool
+	// Used by Transition to remove tokens from (input) Place
 	ConsumeTokens()
+	// Used by Transition to add tokens to (output) Place
 	FireTokens()
 }
 
 type Arc struct {
-	Id     string
+	id     string
 	Weight int
 	P      PlaceI
 	T      TransitionI
 }
 
+func (a *Arc) Id() string {
+	return a.id
+}
 func (a *Arc) String() string {
-	return fmt.Sprintf("ID [%s] Weight [%d]", a.Id, a.Weight)
+	return fmt.Sprintf("ID [%s] Weight [%d]", a.Id(), a.Weight)
 }
 func (a *Arc) Place() PlaceI {
 	return a.P
@@ -32,52 +38,46 @@ func (a *Arc) Place() PlaceI {
 func (a *Arc) Transition() TransitionI {
 	return a.T
 }
-
-// Used by Place to notify Transition its readiness
-func (a *Arc) Notify(toks int) {
-	if toks >= a.Weight {
+func (a *Arc) Notify() {
+	if a.P.Tokens() >= a.Weight {
 		a.T.notifyReadiness()
 	}
 }
-
-//
-func (a *Arc) TestConsumeTokens() bool {
+func (a *Arc) IsEnabled() bool {
 	return a.P.Tokens() >= a.Weight
 }
-
-// Used by Transition to remove tokens from (incoming) Place
 func (a *Arc) ConsumeTokens() {
 	a.P.addTokensNoLock(-a.Weight)
 }
-
-// Used by Transition to add tokens to (destination) Place
 func (a *Arc) FireTokens() {
 	a.P.addTokensNoLock(a.Weight)
 }
 
-/*
-	[P]lace -> [T]ransition enable arc
+/* Enable Arc type  used to link Transition to Place
+Place -> Transition
 */
 const undef = -1
 
 type EnableArc struct {
-	Id string
-	P  PlaceI
-	T  *Transition
-	// weight range
-	low  int // >=low
-	high int // <=high
+	id   string
+	P    PlaceI
+	T    TransitionI
+	low  int // weight >=low
+	high int // weight <=high
 }
 
-func NewEnableArc(id string) *EnableArc {
+func newEnableArc(id string) *EnableArc {
 	arc := EnableArc{}
-	arc.Id = id
+	arc.id = id
 	arc.low = undef
 	arc.high = undef
 	return &arc
 }
+func (a *EnableArc) Id() string {
+	return a.id
+}
 func (a *EnableArc) String() string {
-	return fmt.Sprintf("ID [%s] Low [%d] High [%d]", a.Id, a.low, a.high)
+	return fmt.Sprintf("ID [%s] Low [%d] High [%d]", a.Id(), a.low, a.high)
 }
 func (a *EnableArc) Place() PlaceI {
 	return a.P
@@ -95,12 +95,9 @@ func (a *EnableArc) IsEnabled() bool {
 	}
 	return true
 }
-func (a *EnableArc) TestConsumeTokens() bool {
-	return a.IsEnabled()
-}
 func (a *EnableArc) ConsumeTokens() {}
 func (a *EnableArc) FireTokens()    {}
-func (a *EnableArc) Notify(toks int) {
+func (a *EnableArc) Notify() {
 	if a.IsEnabled() {
 		a.T.notifyReadiness()
 	}

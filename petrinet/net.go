@@ -21,11 +21,11 @@ type Net struct {
 	transitions  []TransitionI
 	animation    bool // enable/disable animation recording
 	animationSem chan bool
-	frames       []frame // animation sequence in graphviz/dot format
+	frames       []frame // animation sequence
 }
 
 type frame struct {
-	dot   string
+	dot   string // graphviz/dot format
 	delay int
 }
 
@@ -46,7 +46,7 @@ func (n *Net) NewTransition(id string) TransitionI {
 }
 func (n *Net) Start() {
 	// initial frame
-	dot := buildDot(n, nil)
+	dot := n.buildDot(nil)
 	n.addAnimationFrame([]frame{{dot, 200}})
 
 	for _, t := range n.transitions {
@@ -59,8 +59,8 @@ func (n *Net) Stop() {
 	}
 }
 
-// build net graph as graphviz dot text
-func buildDot(n *Net, t0 TransitionI) string {
+// build net graph as graphviz dot string
+func (n *Net) buildDot(t0 TransitionI) string {
 	places := ""
 	// Places
 	for _, p := range n.places {
@@ -135,7 +135,7 @@ digraph PetriNet {
 
 // Save Petri Net as PNG
 func (n *Net) SavePng(filename string) error {
-	dot := buildDot(n, nil)
+	dot := n.buildDot(nil)
 	//logger.Println(dot)
 
 	img := dot2image(dot, map[string]string{"%LEGEND%": ""})

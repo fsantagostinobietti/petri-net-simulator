@@ -9,13 +9,16 @@ import (
 type PlaceI interface {
 	String() string
 	Id() string
+	// Concurrent-safe add tokens operation
 	AddTokens(toks int) bool
 	// Connect Place -> Transition with a weighted Arc
 	ConnectTo(t TransitionI, weight int)
 	Tokens() int
+	// Define an alert function invoked on every change in place tokens
 	SetAlertFunc(func(PlaceI) bool)
-	// Alert generated on every change in tokens number
+	// Alert is generated on every change in tokens number
 	SetAlertOnchange()
+	// Blocks execution waiting for alert
 	WaitForAlert()
 
 	addIn(a ArcI)
@@ -59,7 +62,6 @@ func (p *Place) Tokens() int {
 func (p *Place) SetAlertFunc(f func(PlaceI) bool) {
 	p.alert_onchange = f
 }
-
 func (p *Place) SetAlertOnchange() {
 	p.SetAlertFunc(func(pi PlaceI) bool {
 		return true
@@ -78,10 +80,10 @@ func (p *Place) unlock() {
 	p.sem.Release(1)
 }
 
-// Place notify all connected Transitions if ready for triggering
+// Place notifies all connected Transitions that it's ready for triggering
 func (p *Place) notifyTransitions() {
 	for _, a := range p.arcs_out {
-		a.Notify(p.Tokens())
+		a.Notify()
 	}
 }
 func (p *Place) generateAlert() {
@@ -122,7 +124,7 @@ func (p *Place) addOut(a ArcI) {
 }
 func (p *Place) ConnectTo(t TransitionI, weight int) {
 	a := new(Arc)
-	a.Id = fmt.Sprintf("%s >%d> %s", p.Id(), weight, t.Id())
+	a.id = fmt.Sprintf("%s >%d> %s", p.Id(), weight, t.Id())
 	a.Weight = weight
 	a.P = p
 	a.T = t
